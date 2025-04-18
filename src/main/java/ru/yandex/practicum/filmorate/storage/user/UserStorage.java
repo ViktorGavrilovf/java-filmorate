@@ -7,7 +7,10 @@ import java.util.Optional;
 
 public interface UserStorage {
     User add(User user);
+
     User update(User user);
+
     Collection<User> findAll();
+
     Optional<User> findById(Integer id);
 }
