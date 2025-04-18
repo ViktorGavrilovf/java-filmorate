@@ -9,20 +9,26 @@ import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 
 @Service
 public class FilmService {
     private final FilmStorage filmStorage;
+    private final UserService userService;
 
     @Autowired
-    public FilmService(FilmStorage filmStorage) {
+    public FilmService(FilmStorage filmStorage, UserService userService) {
         this.filmStorage = filmStorage;
+        this.userService = userService;
     }
 
     public Collection<Film> getAllFilms() {
         return filmStorage.findAll();
+    }
+
+    public Film getFilmOrThrow(int id) {
+        return filmStorage.findById(id)
+                .orElseThrow(() -> new NotFoundException("Фильм с id " + id + " не найден"));
     }
 
     public Film createFilm(Film film) {
@@ -32,16 +38,19 @@ public class FilmService {
 
     public Film updateFilm(Film film) {
         checkFilm(film);
+        getFilmOrThrow(film.getId());
         return filmStorage.update(film);
     }
 
     public void addLike(int filmId, int userId) {
         Film film = getFilmOrThrow(filmId);
+        userService.getUserOrThrow(userId);
         film.addLike(userId);
     }
 
     public void removeLike(int filmId, int userId) {
         Film film = getFilmOrThrow(filmId);
+        userService.getUserOrThrow(userId);
         film.removeLike(userId);
     }
 
@@ -65,10 +74,5 @@ public class FilmService {
         if (film.getDuration() <= 0) {
             throw new ValidationException("Продолжительность фильма должна быть положительным числом.");
         }
-    }
-
-    private Film getFilmOrThrow(int id) {
-        return filmStorage.findById(id)
-                .orElseThrow(() -> new NotFoundException("Фильм с id " + id + " не найден"));
     }
 }

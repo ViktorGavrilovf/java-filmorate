@@ -26,6 +26,11 @@ public class UserService {
         return userStorage.findAll();
     }
 
+    public User getUserOrThrow(int id) {
+        return userStorage.findById(id)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id " + id + " не найден"));
+    }
+
     public User createUser(User user) {
         checkUser(user);
         return userStorage.add(user);
@@ -33,6 +38,7 @@ public class UserService {
 
     public User updateUser(User user) {
         checkUser(user);
+        getUserOrThrow(user.getId());
         return userStorage.update(user);
     }
 
@@ -80,11 +86,6 @@ public class UserService {
         if (user.getBirthday().isAfter(LocalDate.now())) {
             throw new ValidationException("дата рождения не может быть в будущем");
         }
-    }
-
-    private User getUserOrThrow(int id) {
-        return userStorage.findById(id)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + id + " не найден"));
     }
 }
 
