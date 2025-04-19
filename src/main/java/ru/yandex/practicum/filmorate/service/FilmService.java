@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -12,6 +13,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Service
+@Slf4j
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserService userService;
@@ -32,47 +34,44 @@ public class FilmService {
     }
 
     public Film createFilm(Film film) {
-        checkFilm(film);
+        checkReleaseDate(film);
+        log.info("СОздание фильма: {}", film);
         return filmStorage.add(film);
     }
 
     public Film updateFilm(Film film) {
-        checkFilm(film);
+        checkReleaseDate(film);
         getFilmOrThrow(film.getId());
+        log.info("Обновление фильма: {}", film);
         return filmStorage.update(film);
     }
 
     public void addLike(int filmId, int userId) {
         Film film = getFilmOrThrow(filmId);
         userService.getUserOrThrow(userId);
+        log.debug("Пользователь {} лайкнул фильм {}", userId, filmId);
         film.addLike(userId);
     }
 
     public void removeLike(int filmId, int userId) {
         Film film = getFilmOrThrow(filmId);
         userService.getUserOrThrow(userId);
+        log.debug("Пользователь {} удалил лайк к фильму {}", userId, filmId);
         film.removeLike(userId);
     }
 
     public List<Film> getMostPopular(int count) {
+        log.info("Запрос популярных фильмов. Количество: {}", count);
         return filmStorage.findAll().stream()
                 .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
                 .limit(count)
                 .toList();
     }
 
-    private void checkFilm(Film film) {
-        if (film.getName().isBlank()) {
-            throw new ValidationException("Название фильма не может быть пустым;");
-        }
-        if (film.getDescription().length() > 200) {
-            throw new ValidationException("Максимальная длина описания — 200 символов");
-        }
+
+    private void checkReleaseDate(Film film) {
         if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
             throw new ValidationException("Дата релиза — не раньше 28 декабря 1895 года");
-        }
-        if (film.getDuration() <= 0) {
-            throw new ValidationException("Продолжительность фильма должна быть положительным числом.");
         }
     }
 }

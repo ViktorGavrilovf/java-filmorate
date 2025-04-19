@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.model;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PastOrPresent;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -20,6 +21,8 @@ public class User {
     private String login;
 
     private String name;
+
+    @PastOrPresent(message = "дата рождения не может быть в будущем")
     private LocalDate birthday;
 
     public void addFriend(Integer friendId) {
