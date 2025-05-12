@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
@@ -19,53 +20,48 @@ public class FilmService {
     private final UserService userService;
 
     @Autowired
-    public FilmService(FilmStorage filmStorage, UserService userService) {
+    public FilmService(@Qualifier("InMemoryFilmStorage") FilmStorage filmStorage, UserService userService) {
         this.filmStorage = filmStorage;
         this.userService = userService;
     }
 
     public Collection<Film> getAllFilms() {
-        return filmStorage.findAll();
+        return filmStorage.getFilms();
     }
 
     public Film getFilmOrThrow(int id) {
-        return filmStorage.findById(id)
+        return filmStorage.findFilmById(id)
                 .orElseThrow(() -> new NotFoundException("Фильм с id " + id + " не найден"));
     }
 
     public Film createFilm(Film film) {
         checkReleaseDate(film);
         log.info("СОздание фильма: {}", film);
-        return filmStorage.add(film);
+        return filmStorage.addFilm(film);
     }
 
     public Film updateFilm(Film film) {
         checkReleaseDate(film);
         getFilmOrThrow(film.getId());
         log.info("Обновление фильма: {}", film);
-        return filmStorage.update(film);
+        return filmStorage.updateFilm(film);
     }
 
     public void addLike(int filmId, int userId) {
-        Film film = getFilmOrThrow(filmId);
         userService.getUserOrThrow(userId);
         log.debug("Пользователь {} лайкнул фильм {}", userId, filmId);
-        film.addLike(userId);
+        filmStorage.addLike(filmId, userId);
     }
 
     public void removeLike(int filmId, int userId) {
-        Film film = getFilmOrThrow(filmId);
         userService.getUserOrThrow(userId);
         log.debug("Пользователь {} удалил лайк к фильму {}", userId, filmId);
-        film.removeLike(userId);
+        filmStorage.removeLike(filmId, userId);
     }
 
     public List<Film> getMostPopular(int count) {
         log.info("Запрос популярных фильмов. Количество: {}", count);
-        return filmStorage.findAll().stream()
-                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
-                .limit(count)
-                .toList();
+        return filmStorage.getMostPopular(count);
     }
 
 
