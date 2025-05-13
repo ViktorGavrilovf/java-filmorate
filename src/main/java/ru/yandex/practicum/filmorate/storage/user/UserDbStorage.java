@@ -56,7 +56,7 @@ public class UserDbStorage implements UserStorage {
         String sql = "SELECT * FROM users WHERE id = ?";
         try {
             User user = jdbcTemplate.queryForObject(sql, this::mapRowToUser, id);
-            return Optional.of(user);
+            return Optional.ofNullable(user);
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
