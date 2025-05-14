@@ -98,7 +98,7 @@ public class FilmDbStorage implements FilmStorage {
                      FROM films f
                      LEFT JOIN film_likes fl ON f.id = fl.film_id
                      GROUP BY f.id
-                     ORDER BY COUNT(fl.user_id) DESC 
+                     ORDER BY COUNT(fl.user_id) DESC
                      LIMIT ?
                      """;
         return jdbcTemplate.query(sql, this::mapToRowFilm, count);
