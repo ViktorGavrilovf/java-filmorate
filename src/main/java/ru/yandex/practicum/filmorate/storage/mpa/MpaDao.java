@@ -7,5 +7,6 @@ import java.util.Optional;
 
 public interface MpaDao {
     List<Mpa> findAllMpa();
+
     Optional<Mpa> findByIdMpa(int id);
 }
