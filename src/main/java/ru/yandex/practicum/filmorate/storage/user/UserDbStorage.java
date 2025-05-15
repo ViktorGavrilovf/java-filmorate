@@ -64,6 +64,9 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void addFriend(int userId, int friendId) {
+        // Уже реализована односторонняя дружба: userId -> friendId
+        // Обратная запись (friendId -> userId) НЕ создаётся
+        // Интеграционный тест добавил
         String sql = "INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, userId, friendId);
     }

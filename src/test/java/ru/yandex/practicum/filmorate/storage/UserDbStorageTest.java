@@ -11,6 +11,7 @@ import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,5 +91,40 @@ public class UserDbStorageTest {
                 .hasSize(2)
                 .anySatisfy(u -> assertThat(u.getLogin()).isEqualTo("user1"))
                 .anySatisfy(u -> assertThat(u.getLogin()).isEqualTo("user2"));
+    }
+
+    // Тест односторонней дружбы
+    @Test
+    void shouldAddFriendOnlyOneWay() {
+        // Создание первого пользователя
+        User user1 = new User();
+        user1.setEmail("user1@email.com");
+        user1.setLogin("user1");
+        user1.setName("User One");
+        user1.setBirthday(LocalDate.of(1990, 1, 1));
+        User savedUser1 = userStorage.addUser(user1);
+
+        // Создание второго пользователя
+        User user2 = new User();
+        user2.setEmail("user2@email.com");
+        user2.setLogin("user2");
+        user2.setName("User Two");
+        user2.setBirthday(LocalDate.of(1992, 2, 2));
+        User savedUser2 = userStorage.addUser(user2);
+
+        // user1 добавляет user2 в друзья
+        userStorage.addFriend(savedUser1.getId(), savedUser2.getId());
+
+        // Проверка: у user1 есть друг user2
+        List<User> friendsOfUser1 = userStorage.getFriends(savedUser1.getId());
+        assertThat(friendsOfUser1)
+                .hasSize(1)
+                .anySatisfy(friend ->
+                        assertThat(friend.getId()).isEqualTo(savedUser2.getId())
+                );
+
+        // Проверка: у user2 нет друзей
+        List<User> friendsOfUser2 = userStorage.getFriends(savedUser2.getId());
+        assertThat(friendsOfUser2).isEmpty();
     }
 }
