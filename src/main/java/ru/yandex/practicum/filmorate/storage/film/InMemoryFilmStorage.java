@@ -54,6 +54,11 @@ public class InMemoryFilmStorage implements FilmStorage {
                 .toList();
     }
 
+    @Override
+    public List<Film> getCommon(int userId, int friendId) {
+        return List.of();
+    }
+
     private Integer idGenerate() {
         return films.keySet()
                 .stream()

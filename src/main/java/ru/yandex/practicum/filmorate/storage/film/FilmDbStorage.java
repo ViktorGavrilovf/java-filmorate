@@ -104,6 +104,21 @@ public class FilmDbStorage implements FilmStorage {
         return jdbcTemplate.query(sql, this::mapToRowFilm, count);
     }
 
+    @Override
+    public List<Film> getCommon(int userId, int friendId) {
+        String sql = """
+                     SELECT f.*
+                     FROM films f
+                     INNER JOIN film_likes fl ON f.id = fl.film_id
+                     INNER JOIN film_likes fl_by_friend ON f.id = fl_by_friend.film_id
+                     INNER JOIN film_likes all_likes ON f.id = all_likes.film_id
+                     WHERE fl.user_id = ? AND fl_by_friend.user_id = ?
+                     GROUP BY f.id
+                     ORDER BY COUNT(all_likes.user_id) DESC
+                     """;
+        return jdbcTemplate.query(sql, this::mapToRowFilm, userId, friendId);
+    }
+
     private void updateGenres(Film film) {
         if (film.getGenres() == null) return;
         String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
