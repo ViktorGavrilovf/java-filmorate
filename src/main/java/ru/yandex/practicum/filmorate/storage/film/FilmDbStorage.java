@@ -104,6 +104,45 @@ public class FilmDbStorage implements FilmStorage {
         return jdbcTemplate.query(sql, this::mapToRowFilm, count);
     }
 
+    @Override
+    public List<Film> getRecommendations(int userId) {
+        String sql = """
+                     WITH common_likes AS (
+                     SELECT
+                     fl_by_other.user_id,
+                     COUNT(fl.film_id) AS count_of_likes
+                     FROM film_likes fl
+                     INNER JOIN film_likes fl_by_other ON fl.film_id = fl_by_other.film_id
+                     AND fl.user_id <> fl_by_other.user_id
+                     WHERE fl.user_id = ?
+                     GROUP BY fl_by_other.user_id
+                     ),
+                     max_common_likes AS (
+                     SELECT MAX(count_of_likes) AS max_count
+                     FROM common_likes
+                     ),
+                     most_similar_users AS (
+                     SELECT user_id
+                     FROM common_likes
+                     WHERE count_of_likes = (SELECT max_count FROM max_common_likes)
+                     )
+                
+                     SELECT DISTINCT f.*
+                     FROM films f
+                     WHERE
+                     NOT EXISTS (
+                     SELECT 1 FROM film_likes
+                     WHERE film_id = f.id AND user_id = ?
+                     )
+                     AND EXISTS (
+                     SELECT 1 FROM film_likes
+                     WHERE film_id = f.id
+                     AND user_id IN (SELECT user_id FROM most_similar_users)
+                     );
+                     """;
+        return jdbcTemplate.query(sql, this::mapToRowFilm, userId, userId);
+    }
+
     private void updateGenres(Film film) {
         if (film.getGenres() == null) return;
         String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
