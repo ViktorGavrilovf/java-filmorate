@@ -59,15 +59,13 @@ public class FilmService {
         filmStorage.removeLike(filmId, userId);
     }
 
-    public List<Film> getMostPopular(int count) {
-        log.info("Запрос популярных фильмов. Количество: {}", count);
-        return filmStorage.getMostPopular(count);
-    }
-
-
     private void checkReleaseDate(Film film) {
         if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
             throw new ValidationException("Дата релиза — не раньше 28 декабря 1895 года");
         }
+    }
+
+    public List<Film> getMostPopularFilms(int count, Integer genreId, Integer year) {
+        return filmStorage.findMostPopularFilms(count, genreId, year);
     }
 }

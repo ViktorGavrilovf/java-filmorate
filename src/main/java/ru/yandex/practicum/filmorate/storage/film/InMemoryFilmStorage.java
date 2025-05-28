@@ -4,9 +4,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
+@Slf4j
 @Component
 @Qualifier("InMemoryFilmStorage")
 public class InMemoryFilmStorage implements FilmStorage {
@@ -47,11 +49,10 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getMostPopular(int count) {
-        return getFilms().stream()
-                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
-                .limit(count)
-                .toList();
+    public List<Film> findMostPopularFilms(int count, Integer genreId, Integer year) {
+        log.warn("Вызван заглушечный метод findMostPopularFilms: count={}, genreId={}, year={}",
+                count, genreId, year);
+        return List.of();
     }
 
     private Integer idGenerate() {
