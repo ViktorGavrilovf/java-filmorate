@@ -64,6 +64,13 @@ public class FilmService {
         return filmStorage.getMostPopular(count);
     }
 
+    public List<Film> getCommonFilmsWithFriend(int userId, int friendId) {
+        userService.getUserOrThrow(userId);
+        userService.getUserOrThrow(friendId);
+        log.info("Запрос общих с другом фильмов. userId: {}, friendId: {}", userId, friendId);
+        return filmStorage.getCommonFilmsWithFriend(userId, friendId);
+    }
+
 
     private void checkReleaseDate(Film film) {
         if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
