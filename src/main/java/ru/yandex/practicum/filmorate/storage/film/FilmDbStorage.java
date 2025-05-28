@@ -121,40 +121,37 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getRecommendations(int userId) {
         String sql = """
-                     WITH common_likes AS (
-                     SELECT
-                     fl_by_other.user_id,
-                     COUNT(fl.film_id) AS count_of_likes
-                     FROM film_likes fl
-                     INNER JOIN film_likes fl_by_other ON fl.film_id = fl_by_other.film_id
-                     AND fl.user_id <> fl_by_other.user_id
-                     WHERE fl.user_id = ?
-                     GROUP BY fl_by_other.user_id
-                     ),
-                     max_common_likes AS (
-                     SELECT MAX(count_of_likes) AS max_count
-                     FROM common_likes
-                     ),
-                     most_similar_users AS (
-                     SELECT user_id
-                     FROM common_likes
-                     WHERE count_of_likes = (SELECT max_count FROM max_common_likes)
-                     )
-                
-                     SELECT DISTINCT f.*
-                     FROM films f
-                     WHERE
-                     NOT EXISTS (
-                     SELECT 1 FROM film_likes
-                     WHERE film_id = f.id AND user_id = ?
-                     )
-                     AND EXISTS (
-                     SELECT 1 FROM film_likes
-                     WHERE film_id = f.id
-                     AND user_id IN (SELECT user_id FROM most_similar_users)
-                     );
-                     """;
-        return jdbcTemplate.query(sql, this::mapToRowFilm, userId, userId);
+                SELECT DISTINCT f.*
+                FROM films f
+                WHERE
+                NOT EXISTS (
+                SELECT 1 FROM film_likes WHERE film_id = f.id AND user_id = ?
+                )
+                AND EXISTS (
+                SELECT 1
+                FROM film_likes fl
+                WHERE fl.film_id = f.id
+                AND fl.user_id IN (
+                -- Находим пользователей с максимальным числом общих лайков
+                SELECT fl2.user_id
+                FROM film_likes fl1
+                JOIN film_likes fl2 ON fl1.film_id = fl2.film_id AND fl1.user_id <> fl2.user_id
+                WHERE fl1.user_id = ?
+                GROUP BY fl2.user_id
+                HAVING COUNT(fl1.film_id) = (
+                SELECT MAX(cnt)
+                FROM (
+                SELECT COUNT(fl3.film_id) as cnt
+                FROM film_likes fl3
+                JOIN film_likes fl4 ON fl3.film_id = fl4.film_id AND fl3.user_id <> fl4.user_id
+                WHERE fl3.user_id = ?
+                GROUP BY fl4.user_id
+                ) counts
+                )
+                )
+                );
+                """;
+        return jdbcTemplate.query(sql, this::mapToRowFilm, userId, userId, userId);
     }
 
     private void updateGenres(Film film) {

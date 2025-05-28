@@ -64,7 +64,8 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public List<Film> getRecommendations(int userId) {
-        return List.of();
+        log.warn("Метод getRecommendations в классе InMemoryFilmStorage не реализован");
+        throw new UnsupportedOperationException("Метод не реализован");
     }
 
     private Integer idGenerate() {
