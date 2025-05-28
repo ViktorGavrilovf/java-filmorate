@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -7,6 +8,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.*;
 
+@Slf4j
 @Component
 @Qualifier("InMemoryFilmStorage")
 public class InMemoryFilmStorage implements FilmStorage {
@@ -52,6 +54,12 @@ public class InMemoryFilmStorage implements FilmStorage {
                 .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
                 .limit(count)
                 .toList();
+    }
+
+    @Override
+    public List<Film> getCommonFilmsWithFriend(int userId, int friendId) {
+        log.warn("Метод getCommonFilmsWithFriend в классе InMemoryFilmStorage не реализован");
+        throw new UnsupportedOperationException("Метод не реализован");
     }
 
     @Override
