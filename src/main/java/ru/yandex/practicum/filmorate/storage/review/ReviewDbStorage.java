@@ -5,6 +5,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Review;
 
 import java.sql.PreparedStatement;
@@ -19,13 +20,17 @@ public class ReviewDbStorage implements ReviewStorage {
 
     @Override
     public Review create(Review review) {
+        if (review.getContent() == null || review.getContent().isBlank()) {
+            throw new ValidationException("Поле content не может быть пустым");
+        }
+
         String sql = "INSERT INTO reviews (content, is_positive, user_id, film_id, useful) " +
                 "VALUES (?, ?, ?, ?, 0)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, new String[]{"review_id"});
-            ps.setString(1, review.getContent() == null ? "" : review.getContent());
+            ps.setString(1, review.getContent());
             ps.setBoolean(2, review.getIsPositive());
             ps.setInt(3, review.getUserId());
             ps.setInt(4, review.getFilmId());
@@ -34,13 +39,8 @@ public class ReviewDbStorage implements ReviewStorage {
 
         review.setReviewId(keyHolder.getKey().intValue());
         review.setUseful(0);
-        // При желании, если content был null, можно обновить объект в памяти:
-        if (review.getContent() == null) {
-            review.setContent("");
-        }
         return review;
     }
-
 
     @Override
     public Review update(Review review) {
