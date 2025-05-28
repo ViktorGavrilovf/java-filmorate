@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.review.ReviewStorage;
 
@@ -26,7 +27,7 @@ public class ReviewService {
 
     public Review findById(int id) {
         return reviewStorage.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Review not found: " + id));
+                .orElseThrow(() -> new NotFoundException("Отзыв с id " + id + " не найден"));
     }
 
     public List<Review> findByFilmId(Integer filmId, Integer count) {

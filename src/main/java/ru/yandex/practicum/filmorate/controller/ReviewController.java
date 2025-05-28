@@ -1,11 +1,13 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.service.ReviewService;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,7 +33,7 @@ public class ReviewController {
 
     @GetMapping("/{id}")
     public Review getById(@PathVariable int id) {
-        return reviewService.findById(id);
+        return reviewService.findById(id);  // либо вернёт Review, либо выбросит NotFoundException
     }
 
     @GetMapping

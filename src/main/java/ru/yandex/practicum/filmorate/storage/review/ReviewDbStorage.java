@@ -25,7 +25,7 @@ public class ReviewDbStorage implements ReviewStorage {
 
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, new String[]{"review_id"});
-            ps.setString(1, review.getContent());
+            ps.setString(1, review.getContent() == null ? "" : review.getContent());
             ps.setBoolean(2, review.getIsPositive());
             ps.setInt(3, review.getUserId());
             ps.setInt(4, review.getFilmId());
@@ -34,8 +34,13 @@ public class ReviewDbStorage implements ReviewStorage {
 
         review.setReviewId(keyHolder.getKey().intValue());
         review.setUseful(0);
+        // При желании, если content был null, можно обновить объект в памяти:
+        if (review.getContent() == null) {
+            review.setContent("");
+        }
         return review;
     }
+
 
     @Override
     public Review update(Review review) {
