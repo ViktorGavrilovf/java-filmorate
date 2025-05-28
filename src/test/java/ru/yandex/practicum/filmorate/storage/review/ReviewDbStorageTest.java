@@ -24,27 +24,21 @@ class ReviewDbStorageTest {
 
     @BeforeEach
     void setUp() {
-        // Очистка таблиц
         jdbcTemplate.update("DELETE FROM review_reactions");
         jdbcTemplate.update("DELETE FROM reviews");
         jdbcTemplate.update("DELETE FROM users");
         jdbcTemplate.update("DELETE FROM films");
-        jdbcTemplate.update("DELETE FROM mpa_ratings"); // если есть таблица с рейтингами
 
-        // Вставляем MPA рейтинг, если он нужен (пример)
-        jdbcTemplate.update("INSERT INTO mpa_ratings (id, name) VALUES (?, ?)", 1, "G");
+        // Предполагаем, что mpa_ratings уже заполнены в тестовой базе
 
-        // Вставляем пользователей
         jdbcTemplate.update("INSERT INTO users (id, name, email, login, birthday) VALUES (?, ?, ?, ?, ?)",
                 1, "Test User1", "test1@example.com", "testuser1", "1990-01-01");
         jdbcTemplate.update("INSERT INTO users (id, name, email, login, birthday) VALUES (?, ?, ?, ?, ?)",
                 2, "Test User2", "test2@example.com", "testuser2", "1991-02-02");
 
-        // Вставляем фильм с mpa_rating_id
         jdbcTemplate.update("INSERT INTO films (id, name, description, release_date, duration, mpa_rating_id) VALUES (?, ?, ?, ?, ?, ?)",
                 1, "Test Film", "Description", "2000-01-01", 120, 1);
 
-        // Создаем тестовый отзыв
         testReview = new Review();
         testReview.setContent("Отличный фильм!");
         testReview.setIsPositive(true);

@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.storage.user;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -17,6 +18,7 @@ import java.util.Optional;
 @Repository
 @Qualifier("UserDbStorage")
 @RequiredArgsConstructor
+@Primary
 public class UserDbStorage implements UserStorage {
 
     private final JdbcTemplate jdbcTemplate;
