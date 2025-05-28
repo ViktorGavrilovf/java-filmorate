@@ -4,10 +4,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+
 @Data
 public class Review {
-    @NotNull
-    private Integer reviewId;
+
+    private Integer reviewId;  // id может быть null при создании
 
     @NotBlank
     private String content;
