@@ -36,6 +36,8 @@ public class Film {
 
     private List<Genre> genres = new ArrayList<>();
 
+    private List <Director> directors;
+
     public void addLike(Integer userId) {
         likes.add(userId);
     }

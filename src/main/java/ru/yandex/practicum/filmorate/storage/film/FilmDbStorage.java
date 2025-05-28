@@ -8,6 +8,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
@@ -26,8 +27,15 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film addFilm(Film film) {
         String sql = """
-                 INSERT INTO films (name, description, release_date, duration, mpa_rating_id) VALUES (?, ?, ?, ?, ?)
+                 INSERT INTO films (name, description, release_date, duration, mpa_rating_id, director_id)
+                 VALUES (?, ?, ?, ?, ?, ?)
                  """;
+
+        Integer directorId = film.getDirectors().stream()
+                .findFirst()
+                .map(Director::getId)
+                .orElse(null);
+
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(con -> {
@@ -37,6 +45,7 @@ public class FilmDbStorage implements FilmStorage {
             ps.setDate(3, Date.valueOf(film.getReleaseDate()));
             ps.setInt(4, film.getDuration());
             ps.setInt(5, film.getMpa().getId());
+            ps.setInt(6, directorId);
             return ps;
         }, keyHolder);
 
@@ -136,6 +145,7 @@ public class FilmDbStorage implements FilmStorage {
         film.setDuration(rs.getInt("duration"));
         film.setMpa(getMpa(rs.getInt("mpa_rating_id")));
         film.setGenres(getGenres(rs.getInt("id")));
+        film.setDirectors(getDirectors(rs.getInt("director_id")));
         return film;
     }
 
@@ -155,5 +165,11 @@ public class FilmDbStorage implements FilmStorage {
                 """;
         return jdbcTemplate.query(sql, ((rs, rowNum) ->
                 new Genre(rs.getInt("id"), rs.getString("name"))), filmId);
+    }
+
+    private List<Director> getDirectors(int directorId) {
+        String sql = "SELECT * FROM directors WHERE id = ?";
+        return jdbcTemplate.query(sql, ((rs, rowNum) ->
+                new Director(rs.getInt("id"), rs.getString("name"))), directorId);
     }
 }
