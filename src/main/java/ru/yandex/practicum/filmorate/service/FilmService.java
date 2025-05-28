@@ -66,6 +66,7 @@ public class FilmService {
     }
 
     public List<Film> getMostPopularFilms(int count, Integer genreId, Integer year) {
+        log.info("Запрос популярных фильмов. Количество: {}, жанр: {}, год: {}", count, genreId, year);
         return filmStorage.findMostPopularFilms(count, genreId, year);
     }
 }
