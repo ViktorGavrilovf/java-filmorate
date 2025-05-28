@@ -105,14 +105,13 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getCommon(int userId, int friendId) {
+    public List<Film> getCommonFilmsWithFriend(int userId, int friendId) {
         String sql = """
                      SELECT f.*
                      FROM films f
-                     INNER JOIN film_likes fl ON f.id = fl.film_id
-                     INNER JOIN film_likes fl_by_friend ON f.id = fl_by_friend.film_id
+                     INNER JOIN film_likes fl ON f.id = fl.film_id AND fl.user_id = ?
+                     INNER JOIN film_likes fl_by_friend ON f.id = fl_by_friend.film_id AND fl_by_friend.user_id = ?
                      INNER JOIN film_likes all_likes ON f.id = all_likes.film_id
-                     WHERE fl.user_id = ? AND fl_by_friend.user_id = ?
                      GROUP BY f.id
                      ORDER BY COUNT(all_likes.user_id) DESC
                      """;

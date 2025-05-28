@@ -7,9 +7,11 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -20,11 +22,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(FilmDbStorage.class)
+@Import({FilmDbStorage.class, UserDbStorage.class})
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class FilmDbStorageTest {
 
     private final FilmDbStorage filmStorage;
+    private final UserDbStorage userStorage;
 
     @Test
     void shouldAddAndGetFilmById() {
@@ -105,5 +108,79 @@ public class FilmDbStorageTest {
                 .hasSize(2)
                 .anySatisfy(f -> assertThat(f.getName()).isEqualTo("Film A"))
                 .anySatisfy(f -> assertThat(f.getName()).isEqualTo("Film B"));
+    }
+
+    @Test
+    void shouldReturnCommonFilmsWithFriendSortedByPopularity() {
+        // Создаем пользователей
+        User user1 = new User();
+        user1.setName("User1");
+        user1.setEmail("user1@example.com");
+        user1.setLogin("user1");
+        user1.setBirthday(LocalDate.of(1990, 1, 1));
+        userStorage.addUser(user1);
+
+        User user2 = new User();
+        user2.setName("User2");
+        user2.setEmail("user2@example.com");
+        user2.setLogin("user2");
+        user2.setBirthday(LocalDate.of(1995, 1, 1));
+        userStorage.addUser(user2);
+
+        User user3 = new User();
+        user3.setName("User3");
+        user3.setEmail("user3@example.com");
+        user3.setLogin("user3");
+        user3.setBirthday(LocalDate.of(1997, 1, 1));
+        userStorage.addUser(user3);
+
+        // Создаем фильмы (популярность = количество лайков)
+        Film film1 = new Film();
+        film1.setName("Film A");
+        film1.setDescription("Description A");
+        film1.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film1.setDuration(100);
+        film1.setMpa(new Mpa(1, "G"));
+        filmStorage.addFilm(film1);
+
+        Film film2 = new Film();
+        film2.setName("Film B");
+        film2.setDescription("Description B");
+        film2.setReleaseDate(LocalDate.of(2010, 1, 1));
+        film2.setDuration(120);
+        film2.setMpa(new Mpa(2, "PG"));
+        filmStorage.addFilm(film2);
+
+        Film film3 = new Film();
+        film3.setName("Film C");
+        film3.setDescription("Description C");
+        film3.setReleaseDate(LocalDate.of(2020, 1, 1));
+        film3.setDuration(90);
+        film3.setMpa(new Mpa(3, "PG-13"));
+        filmStorage.addFilm(film3);
+
+        // Пользователи ставят лайки (определяем популярность)
+        // film1: 2 лайка (самый популярный)
+        // film2: 1 лайк
+        // film3: 0 лайков (не должен попасть в общие)
+        filmStorage.addLike(film1.getId(), user1.getId());
+        filmStorage.addLike(film1.getId(), user2.getId());
+        filmStorage.addLike(film1.getId(), user3.getId());
+
+        filmStorage.addLike(film2.getId(), user1.getId());
+        filmStorage.addLike(film2.getId(), user2.getId());
+
+        filmStorage.addLike(film3.getId(), user1.getId());
+
+        // Вызываем метод, который тестируем
+        List<Film> commonFilms = filmStorage.getCommonFilmsWithFriend(user1.getId(), user2.getId());
+
+        // Проверяем:
+        // 1) Возвращаются 2 общих фильма (film1 и film2)
+        // 2) Сортировка по популярности: film1 (3 лайка) -> film2 (2 лайка)
+        assertThat(commonFilms)
+                .hasSize(2) // film1 и film2 общие
+                .extracting(Film::getName)
+                .containsExactly("Film A", "Film B"); // film1 первый, film2 второй
     }
 }
