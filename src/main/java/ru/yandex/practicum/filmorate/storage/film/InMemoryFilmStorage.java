@@ -57,11 +57,6 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getRecommendations(int userId) {
-        return List.of();
-    }
-
-    @Override
     public List<Film> getCommonFilmsWithFriend(int userId, int friendId) {
         log.warn("Метод getCommonFilmsWithFriend в классе InMemoryFilmStorage не реализован");
         throw new UnsupportedOperationException("Метод не реализован");
