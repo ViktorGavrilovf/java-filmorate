@@ -36,6 +36,25 @@ public class FilmDbStorageTest {
         jdbcTemplate.update(sql, id, "user" + id + "@test.com", "login" + id, "User " + id, LocalDate.of(1990,1,1));
     }
 
+    private User createUser(String name, String email, String login, LocalDate birthday) {
+        User user = new User();
+        user.setName(name);
+        user.setEmail(email);
+        user.setLogin(login);
+        user.setBirthday(birthday);
+        return userStorage.addUser(user);
+    }
+
+    private Film createFilm(String name, String description, LocalDate releaseDate, int duration, Mpa mpa) {
+        Film film = new Film();
+        film.setName(name);
+        film.setDescription(description);
+        film.setReleaseDate(releaseDate);
+        film.setDuration(duration);
+        film.setMpa(mpa);
+        return filmStorage.addFilm(film);
+    }
+
     @Test
     void shouldAddAndGetFilmById() {
         Film film = new Film();
@@ -199,27 +218,6 @@ public class FilmDbStorageTest {
                 .extracting(Film::getName)
                 .containsExactly("Film C");
     }
-
-    // Вспомогательные методы
-    private User createUser(String name, String email, String login, LocalDate birthday) {
-        User user = new User();
-        user.setName(name);
-        user.setEmail(email);
-        user.setLogin(login);
-        user.setBirthday(birthday);
-        return userStorage.addUser(user);
-    }
-
-    private Film createFilm(String name, String description, LocalDate releaseDate, int duration, Mpa mpa) {
-        Film film = new Film();
-        film.setName(name);
-        film.setDescription(description);
-        film.setReleaseDate(releaseDate);
-        film.setDuration(duration);
-        film.setMpa(mpa);
-        return filmStorage.addFilm(film);
-    }
-
 
     @Test
     void shouldFindMostPopularFilms() {
