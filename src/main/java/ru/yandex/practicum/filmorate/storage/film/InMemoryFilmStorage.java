@@ -49,16 +49,21 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getMostPopular(int count) {
-        return getFilms().stream()
-                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
-                .limit(count)
-                .toList();
+    public List<Film> findMostPopularFilms(int count, Integer genreId, Integer year) {
+        log.warn("Вызван заглушечный метод findMostPopularFilms: count={}, genreId={}, year={}",
+                count, genreId, year);
+        return List.of();
     }
 
     @Override
     public List<Film> getCommonFilmsWithFriend(int userId, int friendId) {
         log.warn("Метод getCommonFilmsWithFriend в классе InMemoryFilmStorage не реализован");
+        throw new UnsupportedOperationException("Метод не реализован");
+    }
+
+    @Override
+    public List<Film> getRecommendations(int userId) {
+        log.warn("Метод getRecommendations в классе InMemoryFilmStorage не реализован");
         throw new UnsupportedOperationException("Метод не реализован");
     }
 

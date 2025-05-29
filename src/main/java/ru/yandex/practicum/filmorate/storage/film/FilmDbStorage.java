@@ -13,6 +13,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -94,19 +95,6 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getMostPopular(int count) {
-        String sql = """
-                     SELECT f.*
-                     FROM films f
-                     LEFT JOIN film_likes fl ON f.id = fl.film_id
-                     GROUP BY f.id
-                     ORDER BY COUNT(fl.user_id) DESC
-                     LIMIT ?
-                     """;
-        return jdbcTemplate.query(sql, this::mapToRowFilm, count);
-    }
-
-    @Override
     public List<Film> getCommonFilmsWithFriend(int userId, int friendId) {
         String sql = """
                      SELECT f.*
@@ -118,6 +106,42 @@ public class FilmDbStorage implements FilmStorage {
                      ORDER BY COUNT(all_likes.user_id) DESC
                      """;
         return jdbcTemplate.query(sql, this::mapToRowFilm, userId, friendId);
+    }
+
+    @Override
+    public List<Film> getRecommendations(int userId) {
+        String sql = """
+                SELECT DISTINCT f.*
+                FROM films f
+                WHERE
+                NOT EXISTS (
+                SELECT 1 FROM film_likes WHERE film_id = f.id AND user_id = ?
+                )
+                AND EXISTS (
+                SELECT 1
+                FROM film_likes fl
+                WHERE fl.film_id = f.id
+                AND fl.user_id IN (
+                -- Находим пользователей с максимальным числом общих лайков
+                SELECT fl2.user_id
+                FROM film_likes fl1
+                JOIN film_likes fl2 ON fl1.film_id = fl2.film_id AND fl1.user_id <> fl2.user_id
+                WHERE fl1.user_id = ?
+                GROUP BY fl2.user_id
+                HAVING COUNT(fl1.film_id) = (
+                SELECT MAX(cnt)
+                FROM (
+                SELECT COUNT(fl3.film_id) as cnt
+                FROM film_likes fl3
+                JOIN film_likes fl4 ON fl3.film_id = fl4.film_id AND fl3.user_id <> fl4.user_id
+                WHERE fl3.user_id = ?
+                GROUP BY fl4.user_id
+                ) counts
+                )
+                )
+                );
+                """;
+        return jdbcTemplate.query(sql, this::mapToRowFilm, userId, userId, userId);
     }
 
     private void updateGenres(Film film) {
@@ -157,5 +181,41 @@ public class FilmDbStorage implements FilmStorage {
                 """;
         return jdbcTemplate.query(sql, ((rs, rowNum) ->
                 new Genre(rs.getInt("id"), rs.getString("name"))), filmId);
+    }
+
+    public List<Film> findMostPopularFilms(int count, Integer genreId, Integer year) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT f.*, COUNT(fl.user_id) AS likes_count " +
+                        "FROM films f " +
+                        "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
+                        "LEFT JOIN film_genres fg ON f.id = fg.film_id "
+        );
+
+        List<Object> params = new ArrayList<>();
+        boolean hasGenre = genreId != null;
+        boolean hasYear = year != null;
+
+        if (hasGenre || hasYear) {
+            sql.append("WHERE ");
+            if (hasGenre) {
+                sql.append("fg.genre_id = ? ");
+                params.add(genreId);
+            }
+            if (hasGenre && hasYear) {
+                sql.append("AND ");
+            }
+            if (hasYear) {
+                sql.append("EXTRACT(YEAR FROM f.release_date) = ? ");
+                params.add(year);
+            }
+        }
+
+        sql.append("GROUP BY f.id ");
+        sql.append("ORDER BY likes_count DESC ");
+        sql.append("LIMIT ?");
+
+        params.add(count);
+
+        return jdbcTemplate.query(sql.toString(), this::mapToRowFilm, params.toArray());
     }
 }
