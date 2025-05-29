@@ -74,10 +74,27 @@ public class ReviewService {
     }
 
     public void addDislike(int reviewId, int userId) {
+        // Проверяем, что отзыв существует
+        reviewStorage.findById(reviewId)
+                .orElseThrow(() -> new NotFoundException("Review with id " + reviewId + " not found"));
+
+        // Проверяем, что пользователь существует
+        userStorage.findUserById(userId)
+                .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
+
+        // Если проверки пройдены — добавляем дизлайк
         reviewStorage.addDislike(reviewId, userId);
     }
 
     public void removeReaction(int reviewId, int userId) {
+        // Проверяем, что отзыв существует
+        reviewStorage.findById(reviewId)
+                .orElseThrow(() -> new NotFoundException("Review with id " + reviewId + " not found"));
+
+        // Проверяем, что пользователь существует
+        userStorage.findUserById(userId)
+                .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
+
         reviewStorage.removeReaction(reviewId, userId);
     }
 }
