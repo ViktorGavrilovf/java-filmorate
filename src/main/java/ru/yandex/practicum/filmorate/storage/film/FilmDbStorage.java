@@ -28,14 +28,9 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film addFilm(Film film) {
         String sql = """
-                 INSERT INTO films (name, description, release_date, duration, mpa_rating_id, director_id)
-                 VALUES (?, ?, ?, ?, ?, ?)
+                 INSERT INTO films (name, description, release_date, duration, mpa_rating_id)
+                 VALUES (?, ?, ?, ?, ?)
                  """;
-
-        Integer directorId = film.getDirectors().stream()
-                .findFirst()
-                .map(Director::getId)
-                .orElse(null);
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -46,12 +41,12 @@ public class FilmDbStorage implements FilmStorage {
             ps.setDate(3, Date.valueOf(film.getReleaseDate()));
             ps.setInt(4, film.getDuration());
             ps.setInt(5, film.getMpa().getId());
-            ps.setInt(6, directorId);
             return ps;
         }, keyHolder);
 
         film.setId(keyHolder.getKey().intValue());
         updateGenres(film);
+        updateDirectors(film);
         return film;
     }
 
@@ -151,50 +146,27 @@ public class FilmDbStorage implements FilmStorage {
         return jdbcTemplate.query(sql, this::mapToRowFilm, userId, userId, userId);
     }
 
-    private void updateGenres(Film film) {
-        if (film.getGenres() == null) return;
-        String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
-        film.getGenres().stream()
-                .map(Genre::getId)
-                .distinct()
-                .forEach(genreId -> jdbcTemplate.update(sql, film.getId(), genreId));
-    }
+    @Override
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
 
-    private Film mapToRowFilm(ResultSet rs, int rowNum) throws SQLException {
-        Film film = new Film();
-        film.setId(rs.getInt("id"));
-        film.setName(rs.getString("name"));
-        film.setDescription(rs.getString("description"));
-        film.setReleaseDate(rs.getDate("release_date").toLocalDate());
-        film.setDuration(rs.getInt("duration"));
-        film.setMpa(getMpa(rs.getInt("mpa_rating_id")));
-        film.setGenres(getGenres(rs.getInt("id")));
-        film.setDirectors(getDirectors(rs.getInt("director_id")));
-        return film;
-    }
-
-    private Mpa getMpa(int mpaId) {
-        String sql = "SELECT * FROM mpa_ratings WHERE id = ?";
-        return jdbcTemplate.queryForObject(sql, (rs, rowNum)
-                -> new Mpa(rs.getInt("id"), rs.getString("name")), mpaId);
-    }
-
-    private List<Genre> getGenres(int filmId) {
-        String sql = """
-                SELECT g.id, g.name
-                FROM genres g
-                JOIN film_genres fg ON g.id = fg.genre_id
-                WHERE fg.film_id = ?
-                ORDER BY g.id
-                """;
-        return jdbcTemplate.query(sql, ((rs, rowNum) ->
-                new Genre(rs.getInt("id"), rs.getString("name"))), filmId);
-    }
-
-    private List<Director> getDirectors(int directorId) {
-        String sql = "SELECT * FROM directors WHERE id = ?";
-        return jdbcTemplate.query(sql, ((rs, rowNum) ->
-                new Director(rs.getInt("id"), rs.getString("name"))), directorId);
+        String sql = "";
+        if (sortBy.equals("year")) {
+            sql = """
+                   SELECT f.* FROM films f
+                   INNER JOIN film_directors fd ON f.id = fd.film_id AND fd.director_id = ?
+                   ORDER BY EXTRACT(YEAR FROM f.release_date)
+                   """;
+        }
+        else {
+            sql = """
+                   SELECT f.* FROM films f
+                   INNER JOIN film_directors fd ON f.id = fd.film_id AND fd.director_id = ?
+                   LEFT JOIN film_likes fl ON f.id = fl.film_id
+                   GROUP BY f.id
+                   ORDER BY COUNT(fl.user_id)
+                   """;
+            }
+        return jdbcTemplate.query(sql, this::mapToRowFilm, directorId);
     }
 
     public List<Film> findMostPopularFilms(int count, Integer genreId, Integer year) {
@@ -232,4 +204,65 @@ public class FilmDbStorage implements FilmStorage {
 
         return jdbcTemplate.query(sql.toString(), this::mapToRowFilm, params.toArray());
     }
+
+    private void updateGenres(Film film) {
+        if (film.getGenres() == null) return;
+        String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
+        film.getGenres().stream()
+                .map(Genre::getId)
+                .distinct()
+                .forEach(genreId -> jdbcTemplate.update(sql, film.getId(), genreId));
+    }
+
+    private void updateDirectors(Film film) {
+        if (film.getDirectors() == null || film.getDirectors().isEmpty()) return;
+        String sql = "INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)";
+        film.getDirectors().stream()
+                .map(Director::getId)
+                .distinct()
+                .forEach(directorId -> jdbcTemplate.update(sql, film.getId(), directorId));
+    }
+
+    private Film mapToRowFilm(ResultSet rs, int rowNum) throws SQLException {
+        Film film = new Film();
+        film.setId(rs.getInt("id"));
+        film.setName(rs.getString("name"));
+        film.setDescription(rs.getString("description"));
+        film.setReleaseDate(rs.getDate("release_date").toLocalDate());
+        film.setDuration(rs.getInt("duration"));
+        film.setMpa(getMpa(rs.getInt("mpa_rating_id")));
+        film.setGenres(getGenres(rs.getInt("id")));
+        film.setDirectors(getDirectors(rs.getInt("id")));
+        return film;
+    }
+
+    private Mpa getMpa(int mpaId) {
+        String sql = "SELECT * FROM mpa_ratings WHERE id = ?";
+        return jdbcTemplate.queryForObject(sql, (rs, rowNum)
+                -> new Mpa(rs.getInt("id"), rs.getString("name")), mpaId);
+    }
+
+    private List<Genre> getGenres(int filmId) {
+        String sql = """
+                SELECT g.id, g.name
+                FROM genres g
+                JOIN film_genres fg ON g.id = fg.genre_id
+                WHERE fg.film_id = ?
+                ORDER BY g.id
+                """;
+        return jdbcTemplate.query(sql, ((rs, rowNum) ->
+                new Genre(rs.getInt("id"), rs.getString("name"))), filmId);
+    }
+
+    private List<Director> getDirectors(int film_id) {
+        String sql = """
+        SELECT d.*
+        FROM directors d
+        JOIN film_directors fd ON fd.director_id = d.id
+        WHERE id = ?
+        """;
+        return jdbcTemplate.query(sql, ((rs, rowNum) ->
+                new Director(rs.getInt("id"), rs.getString("name"))), film_id);
+    }
+
 }

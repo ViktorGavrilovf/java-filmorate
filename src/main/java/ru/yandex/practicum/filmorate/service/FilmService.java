@@ -76,4 +76,8 @@ public class FilmService {
         log.info("Запрос популярных фильмов. Количество: {}, жанр: {}, год: {}", count, genreId, year);
         return filmStorage.findMostPopularFilms(count, genreId, year);
     }
+
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
+        return filmStorage.getFilmsByDirector(directorId, sortBy);
+    }
 }

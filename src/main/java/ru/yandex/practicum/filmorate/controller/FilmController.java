@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -58,6 +59,15 @@ public class FilmController {
     @GetMapping("/common")
     public List<Film> getCommonFilmsWithFriend(@RequestParam int userId, @RequestParam int friendId) {
         return filmService.getCommonFilmsWithFriend(userId, friendId);
+    }
+
+    @GetMapping("/director/{directorId}")
+    public List<Film> getFilmsByDirector(
+            @PathVariable int directorId,
+            @RequestParam(required = false, defaultValue = "year")
+            @Pattern(regexp = "year|likes", message = "Допустимые значения sortBy: year, likes")
+            String sortBy) {
+        return filmService.getFilmsByDirector(directorId, sortBy);
     }
 
 }
