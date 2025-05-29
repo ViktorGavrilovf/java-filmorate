@@ -36,6 +36,25 @@ public class FilmDbStorageTest {
         jdbcTemplate.update(sql, id, "user" + id + "@test.com", "login" + id, "User " + id, LocalDate.of(1990,1,1));
     }
 
+    private User createUser(String name, String email, String login, LocalDate birthday) {
+        User user = new User();
+        user.setName(name);
+        user.setEmail(email);
+        user.setLogin(login);
+        user.setBirthday(birthday);
+        return userStorage.addUser(user);
+    }
+
+    private Film createFilm(String name, String description, LocalDate releaseDate, int duration, Mpa mpa) {
+        Film film = new Film();
+        film.setName(name);
+        film.setDescription(description);
+        film.setReleaseDate(releaseDate);
+        film.setDuration(duration);
+        film.setMpa(mpa);
+        return filmStorage.addFilm(film);
+    }
+
     @Test
     void shouldAddAndGetFilmById() {
         Film film = new Film();
@@ -120,51 +139,22 @@ public class FilmDbStorageTest {
     @Test
     void shouldReturnCommonFilmsWithFriendSortedByPopularity() {
         // Создаем пользователей
-        User user1 = new User();
-        user1.setName("User1");
-        user1.setEmail("user1@example.com");
-        user1.setLogin("user1");
-        user1.setBirthday(LocalDate.of(1990, 1, 1));
-        userStorage.addUser(user1);
+        User user1 = createUser("User1", "user1@example.com", "user1",
+                LocalDate.of(1990, 1, 1));
+        User user2 = createUser("User2", "user2@example.com", "user2",
+                LocalDate.of(1995, 1, 1));
+        User user3 = createUser("User3", "user3@example.com", "user3",
+                LocalDate.of(1997, 1, 1));
 
-        User user2 = new User();
-        user2.setName("User2");
-        user2.setEmail("user2@example.com");
-        user2.setLogin("user2");
-        user2.setBirthday(LocalDate.of(1995, 1, 1));
-        userStorage.addUser(user2);
+        // Создаем фильмы
+        Film film1 = createFilm("Film A", "Description A",
+                LocalDate.of(2000, 1, 1), 100, new Mpa(1, "G"));
+        Film film2 = createFilm("Film B", "Description B",
+                LocalDate.of(2010, 1, 1), 120, new Mpa(2, "PG"));
+        Film film3 = createFilm("Film C", "Description C",
+                LocalDate.of(2020, 1, 1), 90, new Mpa(3, "PG-13"));
 
-        User user3 = new User();
-        user3.setName("User3");
-        user3.setEmail("user3@example.com");
-        user3.setLogin("user3");
-        user3.setBirthday(LocalDate.of(1997, 1, 1));
-        userStorage.addUser(user3);
 
-        // Создаем фильмы (популярность = количество лайков)
-        Film film1 = new Film();
-        film1.setName("Film A");
-        film1.setDescription("Description A");
-        film1.setReleaseDate(LocalDate.of(2000, 1, 1));
-        film1.setDuration(100);
-        film1.setMpa(new Mpa(1, "G"));
-        filmStorage.addFilm(film1);
-
-        Film film2 = new Film();
-        film2.setName("Film B");
-        film2.setDescription("Description B");
-        film2.setReleaseDate(LocalDate.of(2010, 1, 1));
-        film2.setDuration(120);
-        film2.setMpa(new Mpa(2, "PG"));
-        filmStorage.addFilm(film2);
-
-        Film film3 = new Film();
-        film3.setName("Film C");
-        film3.setDescription("Description C");
-        film3.setReleaseDate(LocalDate.of(2020, 1, 1));
-        film3.setDuration(90);
-        film3.setMpa(new Mpa(3, "PG-13"));
-        filmStorage.addFilm(film3);
 
         // Пользователи ставят лайки (определяем популярность)
         // film1: 2 лайка (самый популярный)
@@ -189,6 +179,44 @@ public class FilmDbStorageTest {
                 .hasSize(2) // film1 и film2 общие
                 .extracting(Film::getName)
                 .containsExactly("Film A", "Film B"); // film1 первый, film2 второй
+    }
+
+    @Test
+    void shouldReturnRecommendedFilmsBasedOnSimilarUsers() {
+        // Создаем пользователей
+        User user1 = createUser("User1", "user1@example.com", "user1", LocalDate.of(1990, 1, 1));
+        User user2 = createUser("User2", "user2@example.com", "user2", LocalDate.of(1995, 1, 1));
+        User user3 = createUser("User3", "user3@example.com", "user3", LocalDate.of(1997, 1, 1));
+
+        // Создаем фильмы
+        Film film1 = createFilm("Film A", "Description A", LocalDate.of(2000, 1, 1), 100, new Mpa(1, "G"));
+        Film film2 = createFilm("Film B", "Description B", LocalDate.of(2010, 1, 1), 120, new Mpa(2, "PG"));
+        Film film3 = createFilm("Film C", "Description C", LocalDate.of(2020, 1, 1), 90, new Mpa(3, "PG-13"));
+        Film film4 = createFilm("Film D", "Description D", LocalDate.of(2020, 1, 1), 90, new Mpa(3, "PG-13"));
+
+
+        // Пользователи ставят лайки:
+        // - user1 лайкнул film1 и film2
+        // - user2 лайкнул film1 и film3 (похож на user1)
+        // - user3 лайкнул film4 (не похож на user1)
+        filmStorage.addLike(film1.getId(), user1.getId());
+        filmStorage.addLike(film2.getId(), user1.getId());
+
+        filmStorage.addLike(film1.getId(), user2.getId());
+        filmStorage.addLike(film3.getId(), user2.getId());
+
+        filmStorage.addLike(film4.getId(), user3.getId());
+
+        // Получаем рекомендации для user1 (должен получить film3, так как его лайкнул user2, у которого схожие вкусы)
+        List<Film> recommendations = filmStorage.getRecommendations(user1.getId());
+
+        // Проверяем:
+        // 1) Рекомендуется film3 (так как user2 лайкнул film1 и film3, а user1 не лайкнул film3)
+        // 2) Не рекомендуются film1 и film2 (user1 их уже лайкнул)
+        assertThat(recommendations)
+                .hasSize(1)
+                .extracting(Film::getName)
+                .containsExactly("Film C");
     }
 
     @Test
