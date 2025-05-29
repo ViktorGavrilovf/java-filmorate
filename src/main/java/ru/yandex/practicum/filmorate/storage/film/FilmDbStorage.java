@@ -163,7 +163,7 @@ public class FilmDbStorage implements FilmStorage {
                    INNER JOIN film_directors fd ON f.id = fd.film_id AND fd.director_id = ?
                    LEFT JOIN film_likes fl ON f.id = fl.film_id
                    GROUP BY f.id
-                   ORDER BY COUNT(fl.user_id)
+                   ORDER BY COUNT(fl.user_id) DESC
                    """;
             }
         return jdbcTemplate.query(sql, this::mapToRowFilm, directorId);
