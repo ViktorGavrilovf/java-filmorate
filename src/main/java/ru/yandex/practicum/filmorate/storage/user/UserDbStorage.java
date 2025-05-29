@@ -18,7 +18,6 @@ import java.util.Optional;
 @Repository
 @Qualifier("UserDbStorage")
 @RequiredArgsConstructor
-@Primary
 public class UserDbStorage implements UserStorage {
 
     private final JdbcTemplate jdbcTemplate;

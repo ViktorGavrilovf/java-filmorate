@@ -18,7 +18,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-@Primary
 @Repository
 @Qualifier("FilmDbStorage")
 @RequiredArgsConstructor
