@@ -76,4 +76,10 @@ public class FilmService {
         log.info("Запрос популярных фильмов. Количество: {}, жанр: {}, год: {}", count, genreId, year);
         return filmStorage.findMostPopularFilms(count, genreId, year);
     }
+
+    public void removeFilm(int filmId) {
+        filmStorage.findFilmById(filmId)
+                .orElseThrow(() -> new NotFoundException("Фильм с id " + filmId + " не найден"));
+        filmStorage.removeFilm(filmId);
+    }
 }
