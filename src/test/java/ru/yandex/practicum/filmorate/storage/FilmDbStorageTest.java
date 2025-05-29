@@ -28,6 +28,13 @@ public class FilmDbStorageTest {
 
     private final FilmDbStorage filmStorage;
     private final UserDbStorage userStorage;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    // Вспомогательный метод для создания пользователя в тестовой БД
+    private void createTestUser(int id) {
+        String sql = "INSERT INTO users (id, email, login, name, birthday) VALUES (?, ?, ?, ?, ?)";
+        jdbcTemplate.update(sql, id, "user" + id + "@test.com", "login" + id, "User " + id, LocalDate.of(1990,1,1));
+    }
 
     @Test
     void shouldAddAndGetFilmById() {
@@ -182,5 +189,73 @@ public class FilmDbStorageTest {
                 .hasSize(2) // film1 и film2 общие
                 .extracting(Film::getName)
                 .containsExactly("Film A", "Film B"); // film1 первый, film2 второй
+    }
+
+    @Test
+    void shouldFindMostPopularFilms() {
+        // Создаем пользователей, чтобы лайки ссылались на существующих
+        createTestUser(1);
+        createTestUser(2);
+        createTestUser(3);
+
+        // Создаем фильмы
+        Film film1 = new Film();
+        film1.setName("Film One");
+        film1.setDescription("Description One");
+        film1.setReleaseDate(LocalDate.of(2010, 1, 1));
+        film1.setDuration(100);
+        film1.setMpa(new Mpa(1, null));
+        film1.setGenres(List.of(new Genre(1, null)));
+
+        Film film2 = new Film();
+        film2.setName("Film Two");
+        film2.setDescription("Description Two");
+        film2.setReleaseDate(LocalDate.of(2011, 1, 1));
+        film2.setDuration(110);
+        film2.setMpa(new Mpa(2, null));
+        film2.setGenres(List.of(new Genre(2, null)));
+
+        Film film3 = new Film();
+        film3.setName("Film Three");
+        film3.setDescription("Description Three");
+        film3.setReleaseDate(LocalDate.of(2012, 1, 1));
+        film3.setDuration(120);
+        film3.setMpa(new Mpa(3, null));
+        film3.setGenres(List.of(new Genre(1, null)));
+
+        film1 = filmStorage.addFilm(film1);
+        film2 = filmStorage.addFilm(film2);
+        film3 = filmStorage.addFilm(film3);
+
+        // Добавляем лайки
+        filmStorage.addLike(film1.getId(), 1); // film1 - 1 лайк
+        filmStorage.addLike(film1.getId(), 2); // film1 - 2 лайка
+        filmStorage.addLike(film2.getId(), 1); // film2 - 1 лайк
+        filmStorage.addLike(film3.getId(), 1); // film3 - 1 лайк
+        filmStorage.addLike(film3.getId(), 2); // film3 - 2 лайка
+        filmStorage.addLike(film3.getId(), 3); // film3 - 3 лайка
+
+        // Проверяем сортировку по популярности без фильтров
+        var popularFilms = filmStorage.findMostPopularFilms(10, null, null);
+        assertThat(popularFilms).hasSize(3);
+        assertThat(popularFilms.get(0).getId()).isEqualTo(film3.getId()); // 3 лайка
+        assertThat(popularFilms.get(1).getId()).isEqualTo(film1.getId()); // 2 лайка
+        assertThat(popularFilms.get(2).getId()).isEqualTo(film2.getId()); // 1 лайк
+
+        // Проверяем фильтр по жанру = 1
+        var genreFiltered = filmStorage.findMostPopularFilms(10, 1, null);
+        assertThat(genreFiltered).hasSize(2);
+        assertThat(genreFiltered.get(0).getId()).isEqualTo(film3.getId());
+        assertThat(genreFiltered.get(1).getId()).isEqualTo(film1.getId());
+
+        // Проверяем фильтр по году = 2011
+        var yearFiltered = filmStorage.findMostPopularFilms(10, null, 2011);
+        assertThat(yearFiltered).hasSize(1);
+        assertThat(yearFiltered.get(0).getId()).isEqualTo(film2.getId());
+
+        // Проверяем фильтр по жанру и году вместе
+        var genreYearFiltered = filmStorage.findMostPopularFilms(10, 1, 2012);
+        assertThat(genreYearFiltered).hasSize(1);
+        assertThat(genreYearFiltered.get(0).getId()).isEqualTo(film3.getId());
     }
 }
