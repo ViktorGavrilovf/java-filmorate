@@ -12,6 +12,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -89,19 +90,6 @@ public class FilmDbStorage implements FilmStorage {
     public void removeLike(int filmId, int userId) {
         String sql = "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
         jdbcTemplate.update(sql, filmId, userId);
-    }
-
-    @Override
-    public List<Film> getMostPopular(int count) {
-        String sql = """
-                     SELECT f.*
-                     FROM films f
-                     LEFT JOIN film_likes fl ON f.id = fl.film_id
-                     GROUP BY f.id
-                     ORDER BY COUNT(fl.user_id) DESC
-                     LIMIT ?
-                     """;
-        return jdbcTemplate.query(sql, this::mapToRowFilm, count);
     }
 
     @Override
@@ -191,5 +179,41 @@ public class FilmDbStorage implements FilmStorage {
                 """;
         return jdbcTemplate.query(sql, ((rs, rowNum) ->
                 new Genre(rs.getInt("id"), rs.getString("name"))), filmId);
+    }
+
+    public List<Film> findMostPopularFilms(int count, Integer genreId, Integer year) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT f.*, COUNT(fl.user_id) AS likes_count " +
+                        "FROM films f " +
+                        "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
+                        "LEFT JOIN film_genres fg ON f.id = fg.film_id "
+        );
+
+        List<Object> params = new ArrayList<>();
+        boolean hasGenre = genreId != null;
+        boolean hasYear = year != null;
+
+        if (hasGenre || hasYear) {
+            sql.append("WHERE ");
+            if (hasGenre) {
+                sql.append("fg.genre_id = ? ");
+                params.add(genreId);
+            }
+            if (hasGenre && hasYear) {
+                sql.append("AND ");
+            }
+            if (hasYear) {
+                sql.append("EXTRACT(YEAR FROM f.release_date) = ? ");
+                params.add(year);
+            }
+        }
+
+        sql.append("GROUP BY f.id ");
+        sql.append("ORDER BY likes_count DESC ");
+        sql.append("LIMIT ?");
+
+        params.add(count);
+
+        return jdbcTemplate.query(sql.toString(), this::mapToRowFilm, params.toArray());
     }
 }
