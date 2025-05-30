@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.event.EventStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
@@ -18,11 +20,15 @@ import java.util.List;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserService userService;
+    private final EventStorage eventStorage;
 
     @Autowired
-    public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage, UserService userService) {
+    public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage,
+                       @Qualifier("EventDbStorage") EventStorage eventStorage,
+                       UserService userService) {
         this.filmStorage = filmStorage;
         this.userService = userService;
+        this.eventStorage = eventStorage;
     }
 
     public Collection<Film> getAllFilms() {
@@ -51,12 +57,30 @@ public class FilmService {
         userService.getUserOrThrow(userId);
         log.debug("Пользователь {} лайкнул фильм {}", userId, filmId);
         filmStorage.addLike(filmId, userId);
+
+        Event event = new Event();
+        event.setTimestamp(System.currentTimeMillis());
+        event.setUserId(userId);
+        event.setEventType("LIKE");
+        event.setOperation("ADD");
+        event.setEntityId(filmId);
+
+        eventStorage.addEvent(event);
     }
 
     public void removeLike(int filmId, int userId) {
         userService.getUserOrThrow(userId);
         log.debug("Пользователь {} удалил лайк к фильму {}", userId, filmId);
         filmStorage.removeLike(filmId, userId);
+
+        Event event = new Event();
+        event.setTimestamp(System.currentTimeMillis());
+        event.setUserId(userId);
+        event.setEventType("LIKE");
+        event.setOperation("REMOVE");
+        event.setEntityId(filmId);
+
+        eventStorage.addEvent(event);
     }
 
     public List<Film> getCommonFilmsWithFriend(int userId, int friendId) {

@@ -6,8 +6,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.event.EventStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -19,11 +21,15 @@ import java.util.List;
 public class UserService {
     private final UserStorage userStorage;
     private final FilmStorage filmStorage;
+    private final EventStorage eventStorage;
 
     @Autowired
-    public UserService(@Qualifier("UserDbStorage") UserStorage userStorage, @Qualifier("FilmDbStorage") FilmStorage filmStorage) {
+    public UserService(@Qualifier("UserDbStorage") UserStorage userStorage,
+                       @Qualifier("FilmDbStorage") FilmStorage filmStorage,
+                       @Qualifier("EventDbStorage") EventStorage eventStorage) {
         this.userStorage = userStorage;
         this.filmStorage = filmStorage;
+        this.eventStorage = eventStorage;
     }
 
     public Collection<User> getAllUsers() {
@@ -51,6 +57,15 @@ public class UserService {
     public void addFriend(int userId, int friendId) {
         log.debug("Добавление в друзья {} -> {}", userId, friendId);
         userStorage.addFriend(userId, friendId);
+
+        Event event = new Event();
+        event.setTimestamp(System.currentTimeMillis());
+        event.setUserId(userId);
+        event.setEventType("FRIEND");
+        event.setOperation("ADD");
+        event.setEntityId(friendId);
+
+        eventStorage.addEvent(event);
     }
 
     public void removeFriend(int userId, int friendId) {
@@ -58,6 +73,15 @@ public class UserService {
         getUserOrThrow(userId);
         getUserOrThrow(friendId);
         userStorage.removeFriend(userId, friendId);
+
+        Event event = new Event();
+        event.setTimestamp(System.currentTimeMillis());
+        event.setUserId(userId);
+        event.setEventType("FRIEND");
+        event.setOperation("REMOVE");
+        event.setEntityId(friendId);
+
+        eventStorage.addEvent(event);
     }
 
     public List<User> getFriends(int userId) {
@@ -90,6 +114,11 @@ public class UserService {
     public void removeUser(int userId) {
         getUserOrThrow(userId);
         userStorage.removeUser(userId);
+    }
+
+    public List<Event> getFeed(int userId) {
+        getUserOrThrow(userId);
+        return eventStorage.getFeed(userId);
     }
 }
 
