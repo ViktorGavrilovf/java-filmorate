@@ -151,20 +151,19 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "";
         if (sortBy.equals("year")) {
             sql = """
-                   SELECT f.* FROM films f
-                   INNER JOIN film_directors fd ON f.id = fd.film_id AND fd.director_id = ?
-                   ORDER BY EXTRACT(YEAR FROM f.release_date)
-                   """;
-        }
-        else {
+                    SELECT f.* FROM films f
+                    INNER JOIN film_directors fd ON f.id = fd.film_id AND fd.director_id = ?
+                    ORDER BY EXTRACT(YEAR FROM f.release_date)
+                    """;
+        } else {
             sql = """
-                   SELECT f.* FROM films f
-                   INNER JOIN film_directors fd ON f.id = fd.film_id AND fd.director_id = ?
-                   LEFT JOIN film_likes fl ON f.id = fl.film_id
-                   GROUP BY f.id
-                   ORDER BY COUNT(fl.user_id) DESC
-                   """;
-            }
+                    SELECT f.* FROM films f
+                    INNER JOIN film_directors fd ON f.id = fd.film_id AND fd.director_id = ?
+                    LEFT JOIN film_likes fl ON f.id = fl.film_id
+                    GROUP BY f.id
+                    ORDER BY COUNT(fl.user_id) DESC
+                    """;
+        }
         return jdbcTemplate.query(sql, this::mapToRowFilm, directorId);
     }
 
