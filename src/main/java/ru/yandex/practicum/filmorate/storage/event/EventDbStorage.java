@@ -13,7 +13,7 @@ import java.util.List;
 @Repository
 @Qualifier("EventDbStorage")
 @RequiredArgsConstructor
-public class EventDbStorage implements EventStorage{
+public class EventDbStorage implements EventStorage {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
