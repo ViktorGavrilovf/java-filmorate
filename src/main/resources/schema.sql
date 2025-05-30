@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS friendships (
     friend_id INTEGER NOT NULL,
     PRIMARY KEY (user_id, friend_id),
     CONSTRAINT fk_friend_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_friend_friend  FOREIGN KEY (friend_id) REFERENCES users(id)
+    CONSTRAINT fk_friend_friend  FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS reviews (

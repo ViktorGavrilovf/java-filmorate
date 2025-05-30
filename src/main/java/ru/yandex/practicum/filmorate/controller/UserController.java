@@ -63,4 +63,9 @@ public class UserController {
     public List<Film> getRecommendations(@PathVariable int id) {
         return userService.getRecommendations(id);
     }
+
+    @DeleteMapping("/{userId}")
+    public void removeUser(@PathVariable int userId) {
+        userService.removeUser(userId);
+    }
 }
