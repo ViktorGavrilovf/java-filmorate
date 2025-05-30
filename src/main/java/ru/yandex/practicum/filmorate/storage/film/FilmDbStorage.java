@@ -63,7 +63,9 @@ public class FilmDbStorage implements FilmStorage {
                 film.getMpa().getId(),
                 film.getId());
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
+        jdbcTemplate.update("DELETE FROM film_directors WHERE film_id = ?", film.getId());
         updateGenres(film);
+        updateDirectors(film);
         return film;
     }
 
@@ -151,20 +153,20 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "";
         if (sortBy.equals("year")) {
             sql = """
-                   SELECT f.* FROM films f
-                   INNER JOIN film_directors fd ON f.id = fd.film_id AND fd.director_id = ?
-                   ORDER BY EXTRACT(YEAR FROM f.release_date)
-                   """;
-        }
-        else {
+                    SELECT f.* FROM films f
+                    INNER JOIN film_directors fd ON f.id = fd.film_id AND fd.director_id = ?
+                    ORDER BY EXTRACT(YEAR FROM f.release_date)
+                    """;
+        } else {
             sql = """
-                   SELECT f.* FROM films f
-                   INNER JOIN film_directors fd ON f.id = fd.film_id AND fd.director_id = ?
-                   LEFT JOIN film_likes fl ON f.id = fl.film_id
-                   GROUP BY f.id
-                   ORDER BY COUNT(fl.user_id) DESC
-                   """;
-            }
+                    SELECT f.* FROM films f
+                    INNER JOIN film_directors fd ON f.id = fd.film_id AND fd.director_id = ?
+                    LEFT JOIN film_likes fl ON f.id = fl.film_id
+                    GROUP BY f.id
+                    ORDER BY COUNT(fl.user_id) DESC
+                    """;
+        }
+
         return jdbcTemplate.query(sql, this::mapToRowFilm, directorId);
     }
 
@@ -258,7 +260,7 @@ public class FilmDbStorage implements FilmStorage {
         SELECT d.*
         FROM directors d
         JOIN film_directors fd ON fd.director_id = d.id
-        WHERE id = ?
+        WHERE fd.film_id = ?
         """;
         return jdbcTemplate.query(sql, ((rs, rowNum) ->
                 new Director(rs.getInt("id"), rs.getString("name"))), film_id);
