@@ -28,8 +28,8 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film addFilm(Film film) {
         String sql = """
-                 INSERT INTO films (name, description, release_date, duration, mpa_rating_id) VALUES (?, ?, ?, ?, ?)
-                 """;
+                INSERT INTO films (name, description, release_date, duration, mpa_rating_id) VALUES (?, ?, ?, ?, ?)
+                """;
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(con -> {
@@ -51,9 +51,9 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film updateFilm(Film film) {
         String sql = """
-                     UPDATE films SET name = ?, description = ?, release_date = ?,
-                     duration = ?, mpa_rating_id = ? WHERE id = ?
-                     """;
+                UPDATE films SET name = ?, description = ?, release_date = ?,
+                duration = ?, mpa_rating_id = ? WHERE id = ?
+                """;
         jdbcTemplate.update(sql,
                 film.getName(),
                 film.getDescription(),
@@ -99,14 +99,14 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getCommonFilmsWithFriend(int userId, int friendId) {
         String sql = """
-                     SELECT f.*
-                     FROM films f
-                     INNER JOIN film_likes fl ON f.id = fl.film_id AND fl.user_id = ?
-                     INNER JOIN film_likes fl_by_friend ON f.id = fl_by_friend.film_id AND fl_by_friend.user_id = ?
-                     INNER JOIN film_likes all_likes ON f.id = all_likes.film_id
-                     GROUP BY f.id
-                     ORDER BY COUNT(all_likes.user_id) DESC
-                     """;
+                SELECT f.*
+                FROM films f
+                INNER JOIN film_likes fl ON f.id = fl.film_id AND fl.user_id = ?
+                INNER JOIN film_likes fl_by_friend ON f.id = fl_by_friend.film_id AND fl_by_friend.user_id = ?
+                INNER JOIN film_likes all_likes ON f.id = all_likes.film_id
+                GROUP BY f.id
+                ORDER BY COUNT(all_likes.user_id) DESC
+                """;
         return jdbcTemplate.query(sql, this::mapToRowFilm, userId, friendId);
     }
 
@@ -205,6 +205,11 @@ public class FilmDbStorage implements FilmStorage {
         return jdbcTemplate.query(sql.toString(), this::mapToRowFilm, params.toArray());
     }
 
+    @Override
+    public void removeFilm(int filmId) {
+        jdbcTemplate.update("DELETE FROM films WHERE id = ?", filmId);
+    }
+
     private void updateGenres(Film film) {
         if (film.getGenres() == null) return;
         String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
@@ -254,55 +259,14 @@ public class FilmDbStorage implements FilmStorage {
                 new Genre(rs.getInt("id"), rs.getString("name"))), filmId);
     }
 
-    public List<Film> findMostPopularFilms(int count, Integer genreId, Integer year) {
-        StringBuilder sql = new StringBuilder(
-                "SELECT f.*, COUNT(fl.user_id) AS likes_count " +
-                        "FROM films f " +
-                        "LEFT JOIN film_likes fl ON f.id = fl.film_id " +
-                        "LEFT JOIN film_genres fg ON f.id = fg.film_id "
-        );
-
-        List<Object> params = new ArrayList<>();
-        boolean hasGenre = genreId != null;
-        boolean hasYear = year != null;
-
-        if (hasGenre || hasYear) {
-            sql.append("WHERE ");
-            if (hasGenre) {
-                sql.append("fg.genre_id = ? ");
-                params.add(genreId);
-            }
-            if (hasGenre && hasYear) {
-                sql.append("AND ");
-            }
-            if (hasYear) {
-                sql.append("EXTRACT(YEAR FROM f.release_date) = ? ");
-                params.add(year);
-            }
-        }
-
-        sql.append("GROUP BY f.id ");
-        sql.append("ORDER BY likes_count DESC ");
-        sql.append("LIMIT ?");
-
-        params.add(count);
-
-        return jdbcTemplate.query(sql.toString(), this::mapToRowFilm, params.toArray());
+    private List<Director> getDirectors(int film_id) {
+        String sql = """
+                SELECT d.*
+                FROM directors d
+                JOIN film_directors fd ON fd.director_id = d.id
+                WHERE fd.film_id = ?
+                """;
+        return jdbcTemplate.query(sql, ((rs, rowNum) ->
+                new Director(rs.getInt("id"), rs.getString("name"))), film_id);
     }
-
-    @Override
-    public void removeFilm(int filmId) {
-        jdbcTemplate.update("DELETE FROM films WHERE id = ?", filmId);
-    }
-}
-
-private List<Director> getDirectors(int film_id) {
-    String sql = """
-        SELECT d.*
-        FROM directors d
-        JOIN film_directors fd ON fd.director_id = d.id
-        WHERE fd.film_id = ?
-        """;
-    return jdbcTemplate.query(sql, ((rs, rowNum) ->
-            new Director(rs.getInt("id"), rs.getString("name"))), film_id);
 }
