@@ -86,6 +86,11 @@ public class UserService {
         getUserOrThrow(userId);
         return filmStorage.getRecommendations(userId);
     }
+
+    public void removeUser(int userId) {
+        getUserOrThrow(userId);
+        userStorage.removeUser(userId);
+    }
 }
 
 

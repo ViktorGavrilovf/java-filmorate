@@ -77,6 +77,12 @@ public class FilmService {
         return filmStorage.findMostPopularFilms(count, genreId, year);
     }
 
+    public void removeFilm(int filmId) {
+        filmStorage.findFilmById(filmId)
+                .orElseThrow(() -> new NotFoundException("Фильм с id " + filmId + " не найден"));
+        filmStorage.removeFilm(filmId);
+    }
+
     public List<Film> getFilmsByDirector(int directorId, String sortBy) {
         return filmStorage.getFilmsByDirector(directorId, sortBy);
     }
