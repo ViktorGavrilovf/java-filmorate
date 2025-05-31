@@ -286,4 +286,49 @@ public class FilmDbStorageTest {
         assertThat(genreYearFiltered).hasSize(1);
         assertThat(genreYearFiltered.get(0).getId()).isEqualTo(film3.getId());
     }
+
+    @Test
+    void shouldGetFilmsByDirectorSortedByYearAndLikes() {
+        // Создаем режиссера
+        jdbcTemplate.update("INSERT INTO directors (id, name) VALUES (?, ?)", 1, "Director 1");
+
+        // Создаем пользователей для лайков
+        createTestUser(1);
+        createTestUser(2);
+
+        // Создаем фильмы с разными годами выпуска
+        Film film1 = createFilm("Film A", "Description A",
+                LocalDate.of(2000, 1, 1), 100, new Mpa(1, "G"));
+        Film film2 = createFilm("Film B", "Description B",
+                LocalDate.of(2010, 1, 1), 120, new Mpa(2, "PG"));
+        Film film3 = createFilm("Film C", "Description C",
+                LocalDate.of(2020, 1, 1), 90, new Mpa(3, "PG-13"));
+
+        // Связываем фильмы с режиссером
+        jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)",
+                film1.getId(), 1);
+        jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)",
+                film2.getId(), 1);
+        jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)",
+                film3.getId(), 1);
+
+        // Добавляем лайки (film3 - 2 лайка, film2 - 1 лайк, film1 - 0 лайков)
+        filmStorage.addLike(film3.getId(), 1);
+        filmStorage.addLike(film3.getId(), 2);
+        filmStorage.addLike(film2.getId(), 1);
+
+        // Проверяем сортировку по годам
+        List<Film> filmsByYear = filmStorage.getFilmsByDirector(1, "year");
+        assertThat(filmsByYear)
+                .hasSize(3)
+                .extracting(Film::getName)
+                .containsExactly("Film A", "Film B", "Film C"); // от старых к новым
+
+        // Проверяем сортировку по лайкам
+        List<Film> filmsByLikes = filmStorage.getFilmsByDirector(1, "likes");
+        assertThat(filmsByLikes)
+                .hasSize(3)
+                .extracting(Film::getName)
+                .containsExactly("Film C", "Film B", "Film A"); // от популярных к непопулярным
+    }
 }
