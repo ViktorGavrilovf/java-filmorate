@@ -10,8 +10,10 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -85,5 +87,15 @@ public class FilmService {
 
     public List<Film> getFilmsByDirector(int directorId, String sortBy) {
         return filmStorage.getFilmsByDirector(directorId, sortBy);
+    }
+
+    public List<Film> searchFilms(String query, String by) {
+        List<String> byList = Arrays.stream(by.split(","))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .toList();
+        log.info("Поиск фильмов по запросу '{}', по полям {}", query, byList);
+
+        return filmStorage.searchFilms(query, byList);
     }
 }
