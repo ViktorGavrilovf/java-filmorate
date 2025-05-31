@@ -1,4 +1,4 @@
- DROP TABLE IF EXISTS review_reactions;
+DROP TABLE IF EXISTS review_reactions;
 DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS film_likes;
 DROP TABLE IF EXISTS film_genres;
