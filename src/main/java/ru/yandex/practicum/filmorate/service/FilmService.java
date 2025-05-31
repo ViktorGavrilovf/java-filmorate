@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.event.EventStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
@@ -58,14 +57,7 @@ public class FilmService {
         log.debug("Пользователь {} лайкнул фильм {}", userId, filmId);
         filmStorage.addLike(filmId, userId);
 
-        Event event = new Event();
-        event.setTimestamp(System.currentTimeMillis());
-        event.setUserId(userId);
-        event.setEventType("LIKE");
-        event.setOperation("ADD");
-        event.setEntityId(filmId);
-
-        eventStorage.addEvent(event);
+        eventStorage.addEvent(userId, "LIKE", "ADD", filmId);
     }
 
     public void removeLike(int filmId, int userId) {
@@ -73,14 +65,7 @@ public class FilmService {
         log.debug("Пользователь {} удалил лайк к фильму {}", userId, filmId);
         filmStorage.removeLike(filmId, userId);
 
-        Event event = new Event();
-        event.setTimestamp(System.currentTimeMillis());
-        event.setUserId(userId);
-        event.setEventType("LIKE");
-        event.setOperation("REMOVE");
-        event.setEntityId(filmId);
-
-        eventStorage.addEvent(event);
+        eventStorage.addEvent(userId, "LIKE", "REMOVE", filmId);
     }
 
     public List<Film> getCommonFilmsWithFriend(int userId, int friendId) {

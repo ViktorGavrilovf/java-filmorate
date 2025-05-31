@@ -17,17 +17,18 @@ public class EventDbStorage implements EventStorage {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public void addEvent(Event event) {
+    public void addEvent(int userId, String eventType, String operation, int entityId) {
         String sql = """
                 INSERT INTO events (TIMESTAMP, USER_ID, EVENT_TYPE, OPERATION, ENTITY_ID)
                 VALUES (?, ?, ?, ?, ?)
                 """;
         jdbcTemplate.update(sql,
-                event.getTimestamp(),
-                event.getUserId(),
-                event.getEventType(),
-                event.getOperation(),
-                event.getEntityId());
+                System.currentTimeMillis(),
+                userId,
+                eventType,
+                operation,
+                entityId
+                );
     }
 
     @Override

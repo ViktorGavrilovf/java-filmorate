@@ -58,14 +58,7 @@ public class UserService {
         log.debug("Добавление в друзья {} -> {}", userId, friendId);
         userStorage.addFriend(userId, friendId);
 
-        Event event = new Event();
-        event.setTimestamp(System.currentTimeMillis());
-        event.setUserId(userId);
-        event.setEventType("FRIEND");
-        event.setOperation("ADD");
-        event.setEntityId(friendId);
-
-        eventStorage.addEvent(event);
+        eventStorage.addEvent(userId, "FRIEND", "ADD", friendId);
     }
 
     public void removeFriend(int userId, int friendId) {
@@ -81,7 +74,7 @@ public class UserService {
         event.setOperation("REMOVE");
         event.setEntityId(friendId);
 
-        eventStorage.addEvent(event);
+        eventStorage.addEvent(userId, "FRIEND", "REMOVE", friendId);
     }
 
     public List<User> getFriends(int userId) {

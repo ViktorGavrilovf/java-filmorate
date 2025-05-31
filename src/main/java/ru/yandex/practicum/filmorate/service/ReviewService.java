@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.event.EventStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
@@ -33,14 +32,7 @@ public class ReviewService {
 
         Review created = reviewStorage.create(review);
 
-        Event event = new Event();
-        event.setTimestamp(System.currentTimeMillis());
-        event.setUserId(created.getUserId());
-        event.setEventType("REVIEW");
-        event.setOperation("ADD");
-        event.setEntityId(created.getReviewId());
-
-        eventStorage.addEvent(event);
+        eventStorage.addEvent(review.getUserId(), "REVIEW", "ADD", created.getReviewId());
 
         return created;
     }
@@ -53,14 +45,7 @@ public class ReviewService {
         // Обновляем отзыв, теперь update может быть уверен, что отзыв есть
         Review updated = reviewStorage.update(review);
 
-        Event event = new Event();
-        event.setTimestamp(System.currentTimeMillis());
-        event.setUserId(updated.getUserId());
-        event.setEventType("REVIEW");
-        event.setOperation("UPDATE");
-        event.setEntityId(updated.getReviewId());
-
-        eventStorage.addEvent(event);
+        eventStorage.addEvent(review.getUserId(), "REVIEW", "UPDATE", updated.getReviewId());
 
         return updated;
     }
@@ -71,14 +56,7 @@ public class ReviewService {
 
         reviewStorage.delete(id);
 
-        Event event = new Event();
-        event.setTimestamp(System.currentTimeMillis());
-        event.setUserId(review.getUserId());
-        event.setEventType("REVIEW");
-        event.setOperation("REMOVE");
-        event.setEntityId(review.getReviewId());
-
-        eventStorage.addEvent(event);
+        eventStorage.addEvent(review.getUserId(), "REVIEW", "REMOVE", id);
     }
 
     public Review findById(int id) {
