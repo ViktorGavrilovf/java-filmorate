@@ -65,6 +65,7 @@ public class FilmController {
     public void removeFilm(@PathVariable int filmId) {
         filmService.removeFilm(filmId);
     }
+
     @GetMapping("/director/{directorId}")
     public List<Film> getFilmsByDirector(
             @PathVariable int directorId,
