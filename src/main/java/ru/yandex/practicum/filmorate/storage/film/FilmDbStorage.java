@@ -269,4 +269,34 @@ public class FilmDbStorage implements FilmStorage {
         return jdbcTemplate.query(sql, ((rs, rowNum) ->
                 new Director(rs.getInt("id"), rs.getString("name"))), film_id);
     }
+
+    @Override
+    public List<Film> searchFilms(String query, List<String> by) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT f.*, COUNT(fl.USER_ID) likes_count
+                FROM FILMS f
+                LEFT JOIN FILM_LIKES fl ON f.ID = fl.FILM_ID
+                LEFT JOIN FILM_DIRECTORS fd ON f.ID = fd.FILM_ID
+                LEFT JOIN DIRECTORS d ON fd.DIRECTOR_ID = d.ID
+                WHERE
+                """);
+
+        List<Object> params = new ArrayList<>();
+        String lowerQuery = "%" + query.toLowerCase() + "%";
+
+        List<String> conditions = new ArrayList<>();
+        if (by.contains("title")) {
+            conditions.add("LOWER(f.NAME) LIKE LOWER(?)");
+            params.add(lowerQuery);
+        }
+        if (by.contains("director")) {
+            conditions.add("LOWER(d.NAME) LIKE LOWER(?)");
+            params.add(lowerQuery);
+        }
+
+        sql.append(String.join(" OR ", conditions));
+        sql.append(" GROUP BY f.ID ORDER BY likes_count DESC");
+
+        return jdbcTemplate.query(sql.toString(), this::mapToRowFilm, params.toArray());
+    }
 }
