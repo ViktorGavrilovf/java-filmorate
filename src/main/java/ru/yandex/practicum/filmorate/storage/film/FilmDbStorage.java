@@ -211,7 +211,7 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void updateGenres(Film film) {
-        if (film.getGenres() == null) return;
+        if (film.getGenres() == null|| film.getGenres().isEmpty()) return;
         String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
         film.getGenres().stream()
                 .map(Genre::getId)
