@@ -331,4 +331,69 @@ public class FilmDbStorageTest {
                 .extracting(Film::getName)
                 .containsExactly("Film C", "Film B", "Film A"); // от популярных к непопулярным
     }
+
+    @Test
+    void shouldDeleteFilmById() {
+        Film film = new Film();
+        film.setName("Film name");
+        film.setDescription("Film Description");
+        film.setReleaseDate(LocalDate.of(2014, 11, 7));
+        film.setDuration(111);
+        film.setMpa(new Mpa(1, null));
+        film.setGenres(List.of(new Genre(1, null), new Genre(2, null)));
+
+        Film created = filmStorage.addFilm(film);
+
+        Optional<Film> found = filmStorage.findFilmById(created.getId());
+        assertThat(found).isPresent();
+
+        filmStorage.removeFilm(created.getId());
+
+        Optional<Film> afterRemove = filmStorage.findFilmById(created.getId());
+        assertThat(afterRemove).isEmpty();
+    }
+
+    @Test
+    void shouldSearchFilmsByTitleAndDirector() {
+        // Добавляем режиссеров
+        jdbcTemplate.update("INSERT INTO directors (id, name) VALUES (?, ?)", 1, "Крадущийся Режиссер");
+        jdbcTemplate.update("INSERT INTO directors (id, name) VALUES (?, ?)", 2, "Другой Режиссер");
+
+        // Добавляем фильмы
+        Film film1 = createFilm("Крадущийся тигр", "Description", LocalDate.of(2000, 1, 1), 120, new Mpa(1, "G"));
+        Film film2 = createFilm("Спящий лев", "Description", LocalDate.of(2001, 1, 1), 100, new Mpa(2, "PG"));
+        Film film3 = createFilm("Тайна крадущегося", "Description", LocalDate.of(2002, 1, 1), 110, new Mpa(3, "PG-13"));
+
+        // Привязываем режиссеров
+        jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)", film1.getId(), 1);
+        jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)", film2.getId(), 2);
+        jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)", film3.getId(), 1);
+
+        // Добавляем пользователей
+        createTestUser(1);
+        createTestUser(2);
+
+        // Добавляем лайки (чтобы проверить сортировку по популярности)
+        filmStorage.addLike(film1.getId(), 1);
+        filmStorage.addLike(film3.getId(), 1);
+        filmStorage.addLike(film3.getId(), 2);
+
+        // Поиск по названию
+        List<Film> byTitle = filmStorage.searchFilms("крад", List.of("title"));
+        assertThat(byTitle)
+                .extracting(Film::getName)
+                .containsExactly("Тайна крадущегося", "Крадущийся тигр");
+
+        // Поиск по режиссеру
+        List<Film> byDirector = filmStorage.searchFilms("крад", List.of("director"));
+        assertThat(byDirector)
+                .extracting(Film::getName)
+                .containsExactly("Тайна крадущегося", "Крадущийся тигр");
+
+        // Поиск по обоим полям
+        List<Film> byBoth = filmStorage.searchFilms("крад", List.of("title", "director"));
+        assertThat(byBoth)
+                .extracting(Film::getName)
+                .containsExactly("Тайна крадущегося", "Крадущийся тигр");
+    }
 }

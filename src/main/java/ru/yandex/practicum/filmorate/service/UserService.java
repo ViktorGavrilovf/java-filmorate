@@ -67,13 +67,6 @@ public class UserService {
         getUserOrThrow(friendId);
         userStorage.removeFriend(userId, friendId);
 
-        Event event = new Event();
-        event.setTimestamp(System.currentTimeMillis());
-        event.setUserId(userId);
-        event.setEventType("FRIEND");
-        event.setOperation("REMOVE");
-        event.setEntityId(friendId);
-
         eventStorage.addEvent(userId, "FRIEND", "REMOVE", friendId);
     }
 
