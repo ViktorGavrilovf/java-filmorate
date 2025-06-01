@@ -5,11 +5,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Event;
+import lombok.extern.slf4j.Slf4j;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+@Slf4j
 @Repository
 @Qualifier("EventDbStorage")
 @RequiredArgsConstructor
@@ -29,6 +31,8 @@ public class EventDbStorage implements EventStorage {
                 operation,
                 entityId
                 );
+        log.info("addEvent called: userId={}, eventType={}, operation={}, entityId={}",
+                userId, eventType, operation, entityId);
     }
 
     @Override
@@ -36,7 +40,7 @@ public class EventDbStorage implements EventStorage {
         String sql = """
                 SELECT * FROM events
                 WHERE USER_ID = ?
-                ORDER BY timestamp
+                ORDER BY event_id
                 """;
         return jdbcTemplate.query(sql, this::mapRowToEvent, userId);
     }

@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.event.EventStorage;
@@ -20,6 +21,7 @@ public class ReviewService {
     private final FilmStorage filmStorage;
     private final EventStorage eventStorage;
 
+    @Transactional
     public Review create(@Valid Review review) {
 
         // Проверяем, что пользователь существует
@@ -37,6 +39,7 @@ public class ReviewService {
         return created;
     }
 
+    @Transactional
     public Review update(Review review) {
         // Проверяем, что отзыв существует
         reviewStorage.findById(review.getReviewId())
@@ -45,17 +48,17 @@ public class ReviewService {
         // Обновляем отзыв, теперь update может быть уверен, что отзыв есть
         Review updated = reviewStorage.update(review);
 
-        eventStorage.addEvent(review.getUserId(), "REVIEW", "UPDATE", updated.getReviewId());
+        eventStorage.addEvent(updated.getUserId(), "REVIEW", "UPDATE", updated.getReviewId());
 
         return updated;
     }
 
+    @Transactional
     public void delete(int id) {
         Review review = reviewStorage.findById(id)
                 .orElseThrow(() -> new NotFoundException("Review with id " + id + " not found"));
 
         eventStorage.addEvent(review.getUserId(), "REVIEW", "REMOVE", id);
-
         reviewStorage.delete(id);
     }
 
@@ -72,6 +75,7 @@ public class ReviewService {
         return reviewStorage.findByFilmId(filmId, finalCount);
     }
 
+    @Transactional
     public void addLike(int reviewId, int userId) {
         // Проверяем, что отзыв существует
         reviewStorage.findById(reviewId)
@@ -82,10 +86,11 @@ public class ReviewService {
                 .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
 
         // Если проверки пройдены — добавляем лайк
+        //eventStorage.addEvent(userId, "REVIEW", "UPDATE", reviewId);
         reviewStorage.addLike(reviewId, userId);
-        eventStorage.addEvent(userId, "REVIEW", "UPDATE", reviewId);
     }
 
+    @Transactional
     public void addDislike(int reviewId, int userId) {
         // Проверяем, что отзыв существует
         reviewStorage.findById(reviewId)
@@ -96,10 +101,11 @@ public class ReviewService {
                 .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
 
         // Если проверки пройдены — добавляем дизлайк
+        //eventStorage.addEvent(userId, "REVIEW", "UPDATE", reviewId);
         reviewStorage.addDislike(reviewId, userId);
-        eventStorage.addEvent(userId, "REVIEW", "UPDATE", reviewId);
     }
 
+    @Transactional
     public void removeReaction(int reviewId, int userId) {
         // Проверяем, что отзыв существует
         reviewStorage.findById(reviewId)
@@ -110,6 +116,6 @@ public class ReviewService {
                 .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
 
         reviewStorage.removeReaction(reviewId, userId);
-        eventStorage.addEvent(userId, "REVIEW", "UPDATE", reviewId);
+        eventStorage.addEvent(userId, "REVIEW", "REMOVE", reviewId);
     }
 }

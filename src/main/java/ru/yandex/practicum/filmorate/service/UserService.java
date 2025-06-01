@@ -56,8 +56,9 @@ public class UserService {
 
     public void addFriend(int userId, int friendId) {
         log.debug("Добавление в друзья {} -> {}", userId, friendId);
+        getUserOrThrow(userId);
+        getUserOrThrow(friendId);
         userStorage.addFriend(userId, friendId);
-
         eventStorage.addEvent(userId, "FRIEND", "ADD", friendId);
     }
 
@@ -66,7 +67,6 @@ public class UserService {
         getUserOrThrow(userId);
         getUserOrThrow(friendId);
         userStorage.removeFriend(userId, friendId);
-
         eventStorage.addEvent(userId, "FRIEND", "REMOVE", friendId);
     }
 
