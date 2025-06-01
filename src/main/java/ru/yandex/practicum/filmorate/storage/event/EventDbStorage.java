@@ -36,7 +36,7 @@ public class EventDbStorage implements EventStorage {
         String sql = """
                 SELECT * FROM events
                 WHERE USER_ID = ?
-                ORDER BY EVENT_ID
+                ORDER BY TIMESTAMP
                 """;
         return jdbcTemplate.query(sql, this::mapRowToEvent, userId);
     }

@@ -7,10 +7,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
+import ru.yandex.practicum.filmorate.storage.director.DirectorDao;
+import ru.yandex.practicum.filmorate.storage.director.DirectorDbStorage;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -24,6 +27,7 @@ import java.util.Optional;
 public class FilmDbStorage implements FilmStorage {
 
     private final JdbcTemplate jdbcTemplate;
+    private final DirectorDbStorage directorDbStorage;
 
     @Override
     public Film addFilm(Film film) {
@@ -44,6 +48,7 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(keyHolder.getKey().intValue());
         updateGenres(film);
+        film.setGenres(getGenres(film.getId()));
         updateDirectors(film);
         return film;
     }
@@ -64,6 +69,7 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
         jdbcTemplate.update("DELETE FROM film_directors WHERE film_id = ?", film.getId());
         updateGenres(film);
+        film.setGenres(getGenres(film.getId()));
         updateDirectors(film);
         return film;
     }
@@ -86,8 +92,14 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void addLike(int filmId, int userId) {
-        String sql = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";
-        jdbcTemplate.update(sql, filmId, userId);
+        String checkSql = """
+        SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?
+    """;
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, filmId, userId);
+        if (count == null || count == 0) {
+            String sql = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";
+            jdbcTemplate.update(sql, filmId, userId);
+        }
     }
 
     @Override
@@ -165,6 +177,8 @@ public class FilmDbStorage implements FilmStorage {
                     ORDER BY COUNT(fl.user_id) DESC
                     """;
         }
+        directorDbStorage.getDirectorById(directorId)
+                .orElseThrow(() -> new NotFoundException("Режиссер с id " + directorId + " не найден"));
 
         return jdbcTemplate.query(sql, this::mapToRowFilm, directorId);
     }

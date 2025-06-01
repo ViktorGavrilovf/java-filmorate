@@ -54,9 +54,9 @@ public class ReviewService {
         Review review = reviewStorage.findById(id)
                 .orElseThrow(() -> new NotFoundException("Review with id " + id + " not found"));
 
-        reviewStorage.delete(id);
-
         eventStorage.addEvent(review.getUserId(), "REVIEW", "REMOVE", id);
+
+        reviewStorage.delete(id);
     }
 
     public Review findById(int id) {
@@ -83,7 +83,7 @@ public class ReviewService {
 
         // Если проверки пройдены — добавляем лайк
         reviewStorage.addLike(reviewId, userId);
-        eventStorage.addEvent(userId, "REVIEW", "UPDATE", reviewId);
+        eventStorage.addEvent(userId, "REVIEW", "ADD", reviewId);
     }
 
     public void addDislike(int reviewId, int userId) {
@@ -97,7 +97,7 @@ public class ReviewService {
 
         // Если проверки пройдены — добавляем дизлайк
         reviewStorage.addDislike(reviewId, userId);
-        eventStorage.addEvent(userId, "REVIEW", "UPDATE", reviewId);
+        eventStorage.addEvent(userId, "REVIEW", "REMOVE", reviewId);
     }
 
     public void removeReaction(int reviewId, int userId) {
@@ -110,6 +110,6 @@ public class ReviewService {
                 .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
 
         reviewStorage.removeReaction(reviewId, userId);
-        eventStorage.addEvent(userId, "REVIEW", "UPDATE", reviewId);
+        eventStorage.addEvent(userId, "REVIEW", "REMOVE", reviewId);
     }
 }
