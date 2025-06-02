@@ -8,7 +8,10 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Director;
 
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,10 +40,7 @@ public class DirectorDbStorage implements DirectorDao {
 
     @Override
     public Director updateDirector(Director director) {
-        String sql = """
-                     UPDATE directors SET name = ? WHERE id = ?
-                     """;
-        jdbcTemplate.update(sql,
+        jdbcTemplate.update("UPDATE directors SET name = ? WHERE id = ?",
                 director.getName(),
                 director.getId());
         return director;
@@ -64,8 +64,7 @@ public class DirectorDbStorage implements DirectorDao {
 
     @Override
     public void deleteDirector(int id) {
-        String sql = "DELETE FROM directors WHERE id = ?";
-        jdbcTemplate.update(sql, id);
+        jdbcTemplate.update("DELETE FROM directors WHERE id = ?", id);
     }
 
     private Director mapToRowDirector(ResultSet rs, int rowNum) throws SQLException {
