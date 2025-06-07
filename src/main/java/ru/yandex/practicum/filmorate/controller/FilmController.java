@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -48,7 +49,37 @@ public class FilmController {
     }
 
     @GetMapping("/popular")
-    public List<Film> getMostPopular(@RequestParam(defaultValue = "10") int count) {
-        return filmService.getMostPopular(count);
+    public List<Film> getMostPopularFilms(
+            @RequestParam(defaultValue = "10") int count,
+            @RequestParam(required = false) Integer genreId,
+            @RequestParam(required = false) Integer year) {
+        return filmService.getMostPopularFilms(count, genreId, year);
+    }
+
+    @GetMapping("/common")
+    public List<Film> getCommonFilmsWithFriend(@RequestParam int userId, @RequestParam int friendId) {
+        return filmService.getCommonFilmsWithFriend(userId, friendId);
+    }
+
+    @DeleteMapping("/{filmId}")
+    public void removeFilm(@PathVariable int filmId) {
+        filmService.removeFilm(filmId);
+    }
+
+    @GetMapping("/director/{directorId}")
+    public List<Film> getFilmsByDirector(
+            @PathVariable int directorId,
+            @RequestParam(required = false, defaultValue = "year")
+            @Pattern(regexp = "year|likes", message = "Допустимые значения sortBy: year, likes")
+            String sortBy) {
+        return filmService.getFilmsByDirector(directorId, sortBy);
+    }
+
+    @GetMapping("/search")
+    public List<Film> searchFilm(
+            @RequestParam String query,
+            @RequestParam String by
+    ) {
+        return filmService.searchFilms(query, by);
     }
 }

@@ -7,9 +7,11 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.event.EventStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -18,11 +20,15 @@ import java.util.List;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserService userService;
+    private final EventStorage eventStorage;
 
     @Autowired
-    public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage, UserService userService) {
+    public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage,
+                       @Qualifier("EventDbStorage") EventStorage eventStorage,
+                       UserService userService) {
         this.filmStorage = filmStorage;
         this.userService = userService;
+        this.eventStorage = eventStorage;
     }
 
     public Collection<Film> getAllFilms() {
@@ -51,23 +57,53 @@ public class FilmService {
         userService.getUserOrThrow(userId);
         log.debug("Пользователь {} лайкнул фильм {}", userId, filmId);
         filmStorage.addLike(filmId, userId);
+
+        eventStorage.addEvent(userId, "LIKE", "ADD", filmId);
     }
 
     public void removeLike(int filmId, int userId) {
         userService.getUserOrThrow(userId);
         log.debug("Пользователь {} удалил лайк к фильму {}", userId, filmId);
         filmStorage.removeLike(filmId, userId);
+
+        eventStorage.addEvent(userId, "LIKE", "REMOVE", filmId);
     }
 
-    public List<Film> getMostPopular(int count) {
-        log.info("Запрос популярных фильмов. Количество: {}", count);
-        return filmStorage.getMostPopular(count);
+    public List<Film> getCommonFilmsWithFriend(int userId, int friendId) {
+        userService.getUserOrThrow(userId);
+        userService.getUserOrThrow(friendId);
+        log.info("Запрос общих с другом фильмов. userId: {}, friendId: {}", userId, friendId);
+        return filmStorage.getCommonFilmsWithFriend(userId, friendId);
     }
-
 
     private void checkReleaseDate(Film film) {
         if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
             throw new ValidationException("Дата релиза — не раньше 28 декабря 1895 года");
         }
+    }
+
+    public List<Film> getMostPopularFilms(int count, Integer genreId, Integer year) {
+        log.info("Запрос популярных фильмов. Количество: {}, жанр: {}, год: {}", count, genreId, year);
+        return filmStorage.findMostPopularFilms(count, genreId, year);
+    }
+
+    public void removeFilm(int filmId) {
+        filmStorage.findFilmById(filmId)
+                .orElseThrow(() -> new NotFoundException("Фильм с id " + filmId + " не найден"));
+        filmStorage.removeFilm(filmId);
+    }
+
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
+        return filmStorage.getFilmsByDirector(directorId, sortBy);
+    }
+
+    public List<Film> searchFilms(String query, String by) {
+        List<String> byList = Arrays.stream(by.split(","))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .toList();
+        log.info("Поиск фильмов по запросу '{}', по полям {}", query, byList);
+
+        return filmStorage.searchFilms(query, byList);
     }
 }

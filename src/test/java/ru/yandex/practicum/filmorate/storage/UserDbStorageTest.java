@@ -127,4 +127,22 @@ public class UserDbStorageTest {
         List<User> friendsOfUser2 = userStorage.getFriends(savedUser2.getId());
         assertThat(friendsOfUser2).isEmpty();
     }
+
+    @Test
+    void shouldDeleteUserById() {
+        User user = new User();
+        user.setEmail("user@example.com");
+        user.setLogin("user123");
+        user.setName("Test User");
+        user.setBirthday(LocalDate.of(1990, 1, 1));
+
+        User created = userStorage.addUser(user);
+        Optional<User> found = userStorage.findUserById(created.getId());
+        assertThat(found).isPresent();
+
+        userStorage.removeUser(created.getId());
+
+        Optional<User> afterRemove = userStorage.findUserById(created.getId());
+        assertThat(afterRemove).isEmpty();
+    }
 }
